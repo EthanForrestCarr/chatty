@@ -74,7 +74,18 @@ export default async function ChatPage({ params }: Props) {
                             }`}
                     >
                         <p className="text-sm font-semibold">{msg.sender.username}</p>
-                        <p>{msg.content}</p>
+                        <div className="flex justify-between items-center gap-4">
+                            <p className="flex-1">{msg.content}</p>
+                            {msg.sender.id === session.user.id && (
+                                <form method="POST" action={`/api/messages/${msg.id}?chatId=${chat.id}`}>
+                                    <input type="hidden" name="_method" value="DELETE" />
+                                    <button className="text-red-500 hover:underline text-sm" type="submit">
+                                        Delete
+                                    </button>
+                                </form>
+                            )}
+                        </div>
+
                         <p className="text-xs text-gray-500">{new Date(msg.createdAt).toLocaleString()}</p>
                     </div>
                 ))}
