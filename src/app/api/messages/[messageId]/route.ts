@@ -36,5 +36,5 @@ export async function POST(req: NextRequest, { params }: Params) {
 
   // Redirect back to the chat page
   const chatId = req.nextUrl.searchParams.get("chatId");
-  return NextResponse.redirect(`/chat/${chatId}`);
+  return NextResponse.redirect(new URL(`/chat/${chatId}`, req.url));
 }

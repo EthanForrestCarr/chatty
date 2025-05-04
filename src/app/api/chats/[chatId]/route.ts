@@ -47,5 +47,5 @@ export async function POST(req: NextRequest, { params }: Params) {
     },
   });
 
-  return NextResponse.redirect(`/chat/${params.chatId}`);
+  return NextResponse.redirect(new URL(`/chat/${params.chatId}`, req.url));
 }
