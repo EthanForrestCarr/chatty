@@ -1,8 +1,12 @@
-// src/app/api/chats/select/route.ts
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 import { getServerSession } from "next-auth";
 import { authOptions } from "../../auth/[...nextauth]/route";
+
+type ChatWithUsers = {
+    id: string;
+    users: { id: string }[];
+  };
 
 export async function POST(req: NextRequest) {
   const session = await getServerSession(authOptions);
@@ -11,29 +15,41 @@ export async function POST(req: NextRequest) {
   }
 
   const { userId } = await req.json();
-  if (!userId) {
-    return NextResponse.json({ error: "Missing userId" }, { status: 400 });
+  if (!userId || userId === session.user.id) {
+    return NextResponse.json({ error: "Invalid userId" }, { status: 400 });
   }
 
-  // Check if a chat already exists between the two users
-  const existingChat = await prisma.chat.findFirst({
+  // Try to find a chat with exactly these two users
+  const possibleChats = await prisma.chat.findMany({
     where: {
       users: {
-        every: {
-          id: { in: [session.user.id, userId] },
-        },
+        some: { id: session.user.id },
       },
     },
+    include: {
+      users: true,
+    },
   });
+  
+  const existingChat = possibleChats.find((chat: ChatWithUsers) =>
+    chat.users.length === 2 &&
+    chat.users.some((u: { id: string }) => u.id === userId) &&
+    chat.users.some((u: { id: string }) => u.id === session.user.id)
+  );
+  
 
   if (existingChat) {
     return NextResponse.json({ chatId: existingChat.id });
   }
 
+  // Create new chat
   const newChat = await prisma.chat.create({
     data: {
       users: {
-        connect: [{ id: session.user.id }, { id: userId }],
+        connect: [
+          { id: session.user.id },
+          { id: userId },
+        ],
       },
     },
   });
