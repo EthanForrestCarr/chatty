@@ -2,6 +2,7 @@ import { getServerSession } from "next-auth";
 import { authOptions } from "../api/auth/[...nextauth]/route";
 import { prisma } from "@/lib/db";
 import Link from "next/link";
+import UserSearchInput from "@/components/UserSearchInput";
 
 type UserPreview = { id: string; username: string };
 type ChatWithUsers = Awaited<ReturnType<typeof prisma.chat.findMany>>[number];
@@ -59,20 +60,7 @@ export default async function DashboardPage() {
             </ul>
 
             <h2 className="text-xl font-semibold mb-2">Start New Chat</h2>
-            <form action="/api/chats" method="POST" className="flex gap-2">
-                <input
-                    type="text"
-                    name="username"
-                    placeholder="Search username..."
-                    className="border p-2 rounded w-full"
-                />
-                <button
-                    type="submit"
-                    className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700"
-                >
-                    Start
-                </button>
-            </form>
+            <UserSearchInput />
         </main>
     );
 }
