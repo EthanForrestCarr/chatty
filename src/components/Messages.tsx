@@ -12,6 +12,12 @@ export default function Messages({ chatId, currentUserId }: { chatId: string; cu
         { refreshInterval: 2000 }
     );
 
+    const { data: typingData } = useSWR(
+        `/api/typing/chat/${chatId}`,
+        fetcher,
+        { refreshInterval: 1500 }
+    );
+
     const scrollAnchor = useRef<HTMLDivElement>(null);
 
     useEffect(() => {
@@ -32,8 +38,8 @@ export default function Messages({ chatId, currentUserId }: { chatId: string; cu
                 <div
                     key={msg.id}
                     className={`max-w-[70%] p-3 rounded-2xl break-words ${msg.sender.id === currentUserId
-                            ? "ml-auto bg-blue-500 text-white"
-                            : "mr-auto bg-gray-200 text-black"
+                        ? "ml-auto bg-blue-500 text-white"
+                        : "mr-auto bg-gray-200 text-black"
                         }`}
                 >
                     <p className="text-sm font-semibold mb-1">
@@ -45,6 +51,15 @@ export default function Messages({ chatId, currentUserId }: { chatId: string; cu
                     </p>
                 </div>
             ))}
+
+            {typingData?.typing?.length > 0 && (
+                <p className="text-sm italic text-gray-500">
+                    {typingData.typing.length === 1
+                        ? "Someone is typing..."
+                        : "Multiple users are typing..."}
+                </p>
+            )}
+
 
             <div ref={scrollAnchor} />
         </div>

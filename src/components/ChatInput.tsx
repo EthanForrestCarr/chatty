@@ -1,9 +1,29 @@
 'use client';
 
-import { useState } from "react";
+import { useState, useRef } from "react";
 
 export default function ChatInput({ chatId }: { chatId: string }) {
   const [content, setContent] = useState("");
+  const typingTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+
+  const sendTypingActivity = () => {
+    fetch(`/api/typing/chat/${chatId}`, {
+      method: "POST",
+    });
+  };
+
+  const handleChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
+    setContent(e.target.value);
+
+    // Debounced typing notification
+    if (typingTimeoutRef.current) {
+      clearTimeout(typingTimeoutRef.current);
+    }
+
+    typingTimeoutRef.current = setTimeout(() => {
+      sendTypingActivity();
+    }, 300); // 300ms after user stops typing
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -21,7 +41,7 @@ export default function ChatInput({ chatId }: { chatId: string }) {
     <form onSubmit={handleSubmit} className="flex gap-2 mt-4">
       <textarea
         value={content}
-        onChange={(e) => setContent(e.target.value)}
+        onChange={handleChange}
         onKeyDown={(e) => {
           if (e.key === "Enter" && !e.shiftKey) {
             e.preventDefault();
@@ -42,3 +62,4 @@ export default function ChatInput({ chatId }: { chatId: string }) {
     </form>
   );
 }
+
