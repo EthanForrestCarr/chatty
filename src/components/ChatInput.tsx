@@ -31,6 +31,7 @@ export default function ChatInput({ chatId }: { chatId: string }) {
         placeholder="Type your message..."
         rows={1}
         className="border p-2 rounded w-full resize-none"
+        autoFocus
       />
       <button
         type="submit"
