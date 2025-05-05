@@ -22,6 +22,12 @@ export default function Messages({ chatId, currentUserId }: { chatId: string; cu
 
     return (
         <div className="space-y-4 mb-6 border p-4 rounded max-h-[60vh] overflow-y-auto">
+            {messages.length === 0 && (
+                <p className="text-center text-gray-500 italic">
+                    No messages yet. Say hi!
+                </p>
+            )}
+
             {messages.map((msg: any) => (
                 <div
                     key={msg.id}
@@ -33,14 +39,15 @@ export default function Messages({ chatId, currentUserId }: { chatId: string; cu
                     <p className="text-sm font-semibold mb-1">
                         {msg.sender.id === currentUserId ? "You" : msg.sender.username}
                     </p>
-
                     <p className="whitespace-pre-wrap">{msg.content}</p>
                     <p className="text-xs text-right mt-1 text-white/70">
                         {new Date(msg.createdAt).toLocaleTimeString()}
                     </p>
                 </div>
             ))}
+
             <div ref={scrollAnchor} />
         </div>
     );
+
 }
