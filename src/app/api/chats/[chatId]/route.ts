@@ -14,7 +14,8 @@ type UserPreview = {
     username: string
 };
 
-export async function POST(req: NextRequest, { params }: Params) {
+export async function POST(req: NextRequest, context: { params: { chatId: string } }) {
+  const { chatId } = context.params;
   const session = await getServerSession(authOptions);
 
   if (!session?.user?.id) {
@@ -24,12 +25,12 @@ export async function POST(req: NextRequest, { params }: Params) {
   const content = (await req.formData()).get("content")?.toString().trim();
 
   if (!content) {
-    return NextResponse.redirect(`/chat/${params.chatId}`);
+    return NextResponse.redirect(`/chat/${chatId}`);
   }
 
   // Check user is in the chat
   const chat = await prisma.chat.findUnique({
-    where: { id: params.chatId },
+    where: { id: chatId },
     include: {
       users: { select: { id: true } },
     },
@@ -42,10 +43,10 @@ export async function POST(req: NextRequest, { params }: Params) {
   await prisma.message.create({
     data: {
       content,
-      chat: { connect: { id: params.chatId } },
+      chat: { connect: { id: chatId } },
       sender: { connect: { id: session.user.id } },
     },
   });
 
-  return NextResponse.redirect(new URL(`/chat/${params.chatId}`, req.url));
+  return NextResponse.redirect(new URL(`/chat/${chatId}`, req.url));
 }

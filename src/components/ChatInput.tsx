@@ -1,39 +1,26 @@
 'use client';
 
 import { useState, useRef } from "react";
+import { initSocket } from "@/lib/socket";
 
-export default function ChatInput({ chatId }: { chatId: string }) {
+export default function ChatInput({ chatId, currentUser }: { chatId: string; currentUser: { id: string; username: string } }) {
   const [content, setContent] = useState("");
   const typingTimeoutRef = useRef<NodeJS.Timeout | null>(null);
-
-  const sendTypingActivity = () => {
-    fetch(`/api/typing/chat/${chatId}`, {
-      method: "POST",
-    });
-  };
-
-  const handleChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
-    setContent(e.target.value);
-
-    // Debounced typing notification
-    if (typingTimeoutRef.current) {
-      clearTimeout(typingTimeoutRef.current);
-    }
-
-    typingTimeoutRef.current = setTimeout(() => {
-      sendTypingActivity();
-    }, 300); // 300ms after user stops typing
-  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!content.trim()) return;
 
-    await fetch(`/api/chats/${chatId}`, {
-      method: "POST",
-      body: new URLSearchParams({ content }),
-    });
+    const msg = {
+      chatId,
+      id: crypto.randomUUID(),
+      content,
+      sender: currentUser,
+      createdAt: new Date().toISOString(),
+    };
 
+    const socket = await initSocket();
+    socket.emit("message", msg);
     setContent("");
   };
 
@@ -41,7 +28,7 @@ export default function ChatInput({ chatId }: { chatId: string }) {
     <form onSubmit={handleSubmit} className="flex gap-2 mt-4">
       <textarea
         value={content}
-        onChange={handleChange}
+        onChange={(e) => setContent(e.target.value)}
         onKeyDown={(e) => {
           if (e.key === "Enter" && !e.shiftKey) {
             e.preventDefault();
@@ -53,10 +40,7 @@ export default function ChatInput({ chatId }: { chatId: string }) {
         className="border p-2 rounded w-full resize-none"
         autoFocus
       />
-      <button
-        type="submit"
-        className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700"
-      >
+      <button type="submit" className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700">
         Send
       </button>
     </form>

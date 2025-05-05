@@ -10,12 +10,13 @@ const typingUsersMap = new Map<string, { [userId: string]: number }>();
 
 const TYPING_TIMEOUT = 5000; // 5 seconds of inactivity
 
-export async function POST(req: NextRequest, { params }: Params) {
+export async function POST(req: NextRequest, context: { params: { chatId: string } }) {
+  const { chatId } = context.params;
+
+
   const session = await getServerSession(authOptions);
   const userId = session?.user?.id;
   if (!userId) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-
-  const chatId = params.chatId;
   const now = Date.now();
 
   const chatTyping = typingUsersMap.get(chatId) || {};
@@ -25,12 +26,12 @@ export async function POST(req: NextRequest, { params }: Params) {
   return NextResponse.json({ status: "ok" });
 }
 
-export async function GET(req: NextRequest, { params }: Params) {
+export async function GET(req: NextRequest, context: { params: { chatId: string } }) {
+  const { chatId } = context.params;
   const session = await getServerSession(authOptions);
   const userId = session?.user?.id;
   if (!userId) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
-  const chatId = params.chatId;
   const now = Date.now();
 
   const chatTyping = typingUsersMap.get(chatId) || {};
