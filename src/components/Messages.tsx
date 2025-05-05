@@ -1,15 +1,22 @@
 'use client';
 
 import useSWR from "swr";
+import { useEffect, useRef } from "react";
 
 const fetcher = (url: string) => fetch(url).then((res) => res.json());
 
 export default function Messages({ chatId, currentUserId }: { chatId: string; currentUserId: string }) {
   const { data: messages, isLoading } = useSWR(
-    `/api/messages/${chatId}`,
+    `/api/messages/chat/${chatId}`,
     fetcher,
-    { refreshInterval: 2000 } // ← poll every 2 seconds
+    { refreshInterval: 2000 }
   );
+
+  const scrollAnchor = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    scrollAnchor.current?.scrollIntoView({ behavior: "smooth" });
+  }, [messages]);
 
   if (isLoading || !messages) return <p>Loading messages...</p>;
 
@@ -26,9 +33,12 @@ export default function Messages({ chatId, currentUserId }: { chatId: string; cu
         >
           <p className="text-sm font-semibold">{msg.sender.username}</p>
           <p>{msg.content}</p>
-          <p className="text-xs text-gray-500">{new Date(msg.createdAt).toLocaleString()}</p>
+          <p className="text-xs text-gray-500">
+            {new Date(msg.createdAt).toLocaleString()}
+          </p>
         </div>
       ))}
+      <div ref={scrollAnchor} />
     </div>
   );
 }
