@@ -3,107 +3,70 @@ import { authOptions } from "../../api/auth/[...nextauth]/route";
 import { prisma } from "@/lib/db";
 import { notFound, redirect } from "next/navigation";
 import Link from "next/link";
+import Messages from "@/components/Messages";
 
 interface Props {
-    params: {
-        chatId: string;
-    };
+  params: {
+    chatId: string;
+  };
 }
-
-type ChatMessage = {
-    id: string;
-    content: string;
-    createdAt: Date;
-    sender: {
-        id: string;
-        username: string;
-    };
-};
 
 type UserPreview = {
-    id: string;
-    username: string
+  id: string;
+  username: string;
 };
 
-
 export default async function ChatPage({ params }: Props) {
-    const session = await getServerSession(authOptions);
+  const session = await getServerSession(authOptions);
 
-    if (!session?.user?.id) {
-        redirect("/login");
-    }
+  if (!session?.user?.id) {
+    redirect("/login");
+  }
 
-    const chat = await prisma.chat.findUnique({
-        where: { id: params.chatId },
-        include: {
-            users: { select: { id: true, username: true } },
-            messages: {
-                orderBy: { createdAt: "asc" },
-                include: {
-                    sender: { select: { id: true, username: true } },
-                },
-            },
-        },
-    });
+  const userId = session.user.id;
 
-    if (!chat) notFound();
+  const chat = await prisma.chat.findUnique({
+    where: { id: params.chatId },
+    include: {
+      users: { select: { id: true, username: true } },
+    },
+  });
 
-    const isUserInChat = chat.users.some((u: UserPreview) => u.id === session.user.id);
-    if (!isUserInChat) {
-        return (
-            <main className="p-4 text-center">
-                <p>You are not authorized to view this chat.</p>
-                <Link href="/dashboard" className="text-blue-500 underline">
-                    Back to Dashboard
-                </Link>
-            </main>
-        );
-    }
+  if (!chat) notFound();
 
+  const isUserInChat = chat.users.some((u: UserPreview) => u.id === userId);
+  if (!isUserInChat) {
     return (
-        <main className="max-w-2xl mx-auto p-4">
-            <h1 className="text-2xl font-bold mb-4">Chat</h1>
-
-            <div className="space-y-4 mb-6 border p-4 rounded max-h-[60vh] overflow-y-auto">
-                {chat.messages.map((msg: ChatMessage) => (
-                    <div
-                        key={msg.id}
-                        className={`p-2 rounded ${msg.sender.id === session.user.id
-                            ? "bg-blue-100 text-right"
-                            : "bg-gray-100 text-left"
-                            }`}
-                    >
-                        <p className="text-sm font-semibold">{msg.sender.username}</p>
-                        <div className="flex justify-between items-center gap-4">
-                            <p className="flex-1">{msg.content}</p>
-                            {msg.sender.id === session.user.id && (
-                                <form method="POST" action={`/api/messages/${msg.id}?chatId=${chat.id}`}>
-                                    <input type="hidden" name="_method" value="DELETE" />
-                                    <button className="text-red-500 hover:underline text-sm" type="submit">
-                                        Delete
-                                    </button>
-                                </form>
-                            )}
-                        </div>
-
-                        <p className="text-xs text-gray-500">{new Date(msg.createdAt).toLocaleString()}</p>
-                    </div>
-                ))}
-            </div>
-
-            <form action={`/api/chats/${chat.id}`} method="POST" className="flex gap-2">
-                <input
-                    name="content"
-                    placeholder="Type your message..."
-                    className="border p-2 rounded w-full"
-                />
-                <button
-                    type="submit"
-                    className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700"
-                >
-                    Send
-                </button>
-            </form>
-        </main>
+      <main className="p-4 text-center">
+        <p>You are not authorized to view this chat.</p>
+        <Link href="/dashboard" className="text-blue-500 underline">
+          Back to Dashboard
+        </Link>
+      </main>
     );
+  }
+
+  return (
+    <main className="max-w-2xl mx-auto p-4">
+      <h1 className="text-2xl font-bold mb-4">Chat</h1>
+
+      {/* Real-time messages block */}
+      <Messages chatId={chat.id} currentUserId={userId} />
+
+      <form action={`/api/chats/${chat.id}`} method="POST" className="flex gap-2">
+        <input
+          name="content"
+          placeholder="Type your message..."
+          className="border p-2 rounded w-full"
+        />
+        <button
+          type="submit"
+          className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700"
+        >
+          Send
+        </button>
+      </form>
+    </main>
+  );
 }
+
