@@ -46,10 +46,13 @@ export default async function ChatPage({ params }: Props) {
             </main>
         );
     }
+    const chatPartner = chat.users.find((u) => u.id !== userId);
 
     return (
         <main className="max-w-2xl mx-auto p-4">
-            <h1 className="text-2xl font-bold mb-4">Chat</h1>
+            <h1 className="text-2xl font-bold mb-4">
+                {chatPartner?.username || "Unknown User"}
+            </h1>
             <Messages chatId={chat.id} currentUserId={userId} />
             <ChatInput chatId={chat.id} />
         </main>
