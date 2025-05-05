@@ -24,19 +24,21 @@ export default function Messages({ chatId, currentUserId }: { chatId: string; cu
     <div className="space-y-4 mb-6 border p-4 rounded max-h-[60vh] overflow-y-auto">
       {messages.map((msg: any) => (
         <div
-          key={msg.id}
-          className={`p-2 rounded ${
-            msg.sender.id === currentUserId
-              ? "bg-blue-100 text-right"
-              : "bg-gray-100 text-left"
-          }`}
-        >
-          <p className="text-sm font-semibold">{msg.sender.username}</p>
-          <p>{msg.content}</p>
-          <p className="text-xs text-gray-500">
-            {new Date(msg.createdAt).toLocaleString()}
-          </p>
-        </div>
+        key={msg.id}
+        className={`max-w-[70%] p-3 rounded-2xl break-words ${
+          msg.sender.id === currentUserId
+            ? "ml-auto bg-blue-500 text-white"
+            : "mr-auto bg-gray-200 text-black"
+        }`}
+      >
+        <p className="text-sm font-semibold mb-1">
+          {msg.sender.username}
+        </p>
+        <p className="whitespace-pre-wrap">{msg.content}</p>
+        <p className="text-xs text-right mt-1 text-white/70">
+          {new Date(msg.createdAt).toLocaleTimeString()}
+        </p>
+      </div>      
       ))}
       <div ref={scrollAnchor} />
     </div>
