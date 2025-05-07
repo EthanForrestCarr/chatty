@@ -65,6 +65,13 @@ export default function SocketHandler(req: NextApiRequest, res: NextApiResponse)
         }
       );
 
+      socket.on(
+        "typing",
+        (chatId: string, user: { id: string; username: string }) => {
+          socket.to(chatId).emit("typing", user);
+        }
+      );
+
       socket.on("disconnecting", () => {
         // cleanup from _all_ rooms this socket is in
         const user = socket.data.user as { id: string; username: string } | undefined;
