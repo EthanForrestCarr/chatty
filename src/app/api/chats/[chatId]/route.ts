@@ -3,12 +3,6 @@ import { getServerSession } from "next-auth";
 import { authOptions } from "../../auth/[...nextauth]/route";
 import { prisma } from "@/lib/db";
 
-interface Params {
-  params: {
-    chatId: string;
-  };
-}
-
 type UserPreview = {
     id: string;
     username: string

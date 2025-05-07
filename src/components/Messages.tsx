@@ -26,39 +26,35 @@ export default function RealtimeMessages({
 }) {
   const [messages, setMessages] = useState<Message[]>([]);
   const [notifications, setNotifications] = useState<string[]>([]);
+  const [online, setOnline] = useState<User[]>([]);
   const scrollAnchor = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     let socket: any;
-
     (async () => {
       socket = await initSocket();
 
-      // join room with user info
+      // join room & tell server who you are
       socket.emit("join", chatId, {
         id: currentUserId,
         username: currentUsername,
       });
 
-      // initial load via REST
+      // load initial messages
       const res = await fetch(`/api/messages/chat/${chatId}`);
-      const initial: Message[] = await res.json();
-      setMessages(initial);
+      setMessages(await res.json());
 
-      // on new message
-      socket.on("message", (msg: Message) => {
-        setMessages((msgs) => [...msgs, msg]);
-      });
-
-      // on user joined
-      socket.on("userJoined", (user: User) => {
-        setNotifications((n) => [...n, `${user.username} joined`]);
-      });
-
-      // on user left
-      socket.on("userLeft", (user: User) => {
-        setNotifications((n) => [...n, `${user.username} left`]);
-      });
+      // events
+      socket.on("message", (msg: Message) =>
+        setMessages((ms) => [...ms, msg])
+      );
+      socket.on("userJoined", (user: User) =>
+        setNotifications((n) => [...n, `${user.username} joined`])
+      );
+      socket.on("userLeft", (user: User) =>
+        setNotifications((n) => [...n, `${user.username} left`])
+      );
+      socket.on("presence", (users: User[]) => setOnline(users));
     })();
 
     return () => {
@@ -70,17 +66,28 @@ export default function RealtimeMessages({
         socket.off("message");
         socket.off("userJoined");
         socket.off("userLeft");
+        socket.off("presence");
       }
     };
   }, [chatId, currentUserId, currentUsername]);
 
-  // auto-scroll when messages change
+  // auto-scroll
   useEffect(() => {
     scrollAnchor.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
 
   return (
     <div className="space-y-2 mb-6 border p-4 rounded max-h-[60vh] overflow-y-auto">
+      {/* Online presence bar */}
+      {online.length > 0 && (
+        <p className="text-xs text-green-600 mb-1">
+          Online now:{" "}
+          {online
+            .map((u) => (u.id === currentUserId ? "You" : u.username))
+            .join(", ")}
+        </p>
+      )}
+
       {/* join/leave notifications */}
       {notifications.map((note, i) => (
         <p key={i} className="text-center text-gray-500 italic text-sm">
@@ -111,7 +118,6 @@ export default function RealtimeMessages({
           </div>
         );
       })}
-
       <div ref={scrollAnchor} />
     </div>
   );
