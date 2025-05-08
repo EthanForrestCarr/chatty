@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useRef, useState } from "react";
-import { initSocket } from "@/lib/socket";
+import { initSocket, subscribeToNewMessages } from "@/lib/socket";
 
 interface Message {
     id: string;
@@ -13,6 +13,15 @@ interface Message {
 interface User {
     id: string;
     username: string;
+}
+
+function uniqById(arr: Message[]): Message[] {
+    const seen = new Set<string>();
+    return arr.filter((m) => {
+        if (seen.has(m.id)) return false;
+        seen.add(m.id);
+        return true;
+    });
 }
 
 export default function RealtimeMessages({
@@ -30,35 +39,38 @@ export default function RealtimeMessages({
     const scrollAnchor = useRef<HTMLDivElement>(null);
     const [typingUsers, setTypingUsers] = useState<Set<string>>(new Set());
 
+    // initial load
     useEffect(() => {
-        let socket: any;
-        (async () => {
-            socket = await initSocket();
+        fetch(`/api/messages/chat/${chatId}`)
+            .then((r) => r.json())
+            .then((msgs: Message[]) => {
+                setMessages(uniqById(msgs));
+            });
+    }, [chatId]);
 
-            // join room & tell server who you are
-            socket.emit("join", chatId, {
+    // pseudo-socket subscription
+    useEffect(() => {
+        let socketInstance: any;
+        (async () => {
+            socketInstance = await initSocket();
+            socketInstance.emit("join", chatId, {
                 id: currentUserId,
                 username: currentUsername,
             });
 
-            // load initial messages
-            const res = await fetch(`/api/messages/chat/${chatId}`);
-            setMessages(await res.json());
+            // wire up new messages
+            const unsubscribe = subscribeToNewMessages((newMsg: Message) => {
+                setMessages((prev) => uniqById([...prev, newMsg]));
+            });
 
-            // events
-            socket.on("message", (msg: Message) =>
-                setMessages((ms) => [...ms, msg])
-            );
-            socket.on("userJoined", (user: User) =>
+            socketInstance.on("userJoined", (user: User) =>
                 setNotifications((n) => [...n, `${user.username} joined`])
             );
-            socket.on("userLeft", (user: User) =>
+            socketInstance.on("userLeft", (user: User) =>
                 setNotifications((n) => [...n, `${user.username} left`])
             );
-            socket.on("presence", (users: User[]) =>
-                setOnline(users)
-            );
-            socket.on("typing", (user: User) => {
+            socketInstance.on("presence", (users: User[]) => setOnline(users));
+            socketInstance.on("typing", (user: User) => {
                 if (user.id !== currentUserId) {
                     setTypingUsers((s) => new Set(s).add(user.username));
                     setTimeout(() => {
@@ -70,19 +82,20 @@ export default function RealtimeMessages({
                     }, 3000);
                 }
             });
+
+            return unsubscribe;
         })();
 
         return () => {
-            if (socket) {
-                socket.emit("leave", chatId, {
+            if (socketInstance) {
+                socketInstance.emit("leave", chatId, {
                     id: currentUserId,
                     username: currentUsername,
                 });
-                socket.off("message");
-                socket.off("userJoined");
-                socket.off("userLeft");
-                socket.off("presence");
-                socket.off("typing");
+                socketInstance.off("userJoined");
+                socketInstance.off("userLeft");
+                socketInstance.off("presence");
+                socketInstance.off("typing");
             }
         };
     }, [chatId, currentUserId, currentUsername]);
