@@ -1,36 +1,48 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+UX/UI Polish
+Unread-message badges
+Show a count next to each chat in your dashboard for messages you haven’t seen yet.
 
-## Getting Started
+Message reactions
+Let users “like” or react to individual bubbles (💖, 👍, 😂, etc.) by adding a small emoji picker.
 
-First, run the development server:
+Edit & Undo Delete
+Allow senders to edit or “undo” a deletion within a short grace period.
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
-```
+Attachment support
+Drag-and-drop images or files, upload them to S3 or your own storage, and render previews inline.
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Mobile responsiveness
+Tweak styling so your chat UI works beautifully on small screens.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+Features & Scaling
+Group chats / channels
+Extend your schema so chats can have more than two users, and add UI for creating/joining channels.
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+Read-receipts & “last seen” timestamps
+Mark messages as “read” when the recipient’s Socket.IO client sees them, and show “Last seen at 3:42 PM.”
 
-## Learn More
+Push notifications
+Integrate the Web Push API so users get notified even if the tab is in the background.
 
-To learn more about Next.js, take a look at the following resources:
+Horizontal scaling with Redis adapter
+Swap in socket.io-redis so your WebSocket server can run on multiple instances behind a load-balancer.
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+DevOps & Quality
+Automated testing
+Write unit tests for your API routes (e.g. with Jest) and E2E tests for your chat flows (with Playwright).
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+Continuous deployment
+Hook up GitHub Actions to lint, test, and deploy to Vercel (or another host) on every push to main.
 
-## Deploy on Vercel
+Monitoring
+Add logging & alerting (Sentry / Logflare / etc.) so you get real-time error reports from production.
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+Type-safe API contracts
+Consider using Zod or TypeScript’s api.ts approach to validate inputs/outputs at runtime.
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+Long-Term
+End-to-end encryption (E2EE) so only clients can read messages.
+
+Voice & video calls via WebRTC.
+
+AI-powered features: message summarization, content moderation, sentiment analysis.

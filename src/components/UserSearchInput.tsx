@@ -22,14 +22,31 @@ export default function UserSearchInput() {
   }, [query]);
 
   const handleSelect = async (userId: string) => {
-    // Create or find chat
     const res = await fetch("/api/chats/select", {
       method: "POST",
       body: JSON.stringify({ userId }),
       headers: { "Content-Type": "application/json" },
     });
 
+    // bail on HTTP errors
+    if (!res.ok) {
+      const err = await res.json().catch(() => null);
+      console.error("Failed to start chat:", err ?? res.statusText);
+      return;
+    }
+
+    // follow any redirects (if for some reason your API route sent one)
+    if (res.redirected) {
+      router.push(new URL(res.url).pathname);
+      return;
+    }
+
+    // now it’s safe to parse
     const data = await res.json();
+    if (!data?.chatId) {
+      console.error("No chatId in response");
+      return;
+    }
     router.push(`/chat/${data.chatId}`);
   };
 
