@@ -11,3 +11,7 @@ export const chatParamsSchema = z.object({
 export const chatSelectSchema = z.object({
   userId: z.string().cuid("Invalid userId"),
 });
+
+export const messageCreateSchema = z.object({
+  content: z.string().min(1, "Cannot send empty message"),
+});
