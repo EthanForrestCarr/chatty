@@ -1,4 +1,5 @@
-import NextAuth, { type AuthOptions } from "next-auth";
+import NextAuth from "next-auth/next";               // use the App Router entrypoint
+import type { AuthOptions } from "next-auth";        // types still come from "next-auth"
 import CredentialsProvider from "next-auth/providers/credentials";
 import { PrismaAdapter } from "@next-auth/prisma-adapter";
 import { prisma } from "@/lib/db";
@@ -59,5 +60,5 @@ export const authOptions: AuthOptions = {
     secret: process.env.NEXTAUTH_SECRET,
 };
 
-const handler = NextAuth(authOptions);
+const handler = NextAuth(authOptions);               // now NextAuth is a function, not undefined
 export { handler as GET, handler as POST };

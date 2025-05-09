@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getServerSession } from "next-auth";
+import { getServerSession } from "next-auth/next";
 import { authOptions } from "../../../auth/[...nextauth]/route";
 import { prisma } from "@/lib/db";
 import { chatParamsSchema, messageCreateSchema } from "@/lib/schemas";
@@ -8,30 +8,45 @@ export const runtime = "nodejs";
 
 export async function GET(
   req: NextRequest,
-  { params: { chatId } }: { params: { chatId: string } }
+  { params }: { params: { chatId: string } }
 ) {
+  // 1) validate chatId
+  const parsed = chatParamsSchema.safeParse(params);
+  if (!parsed.success) {
+    return NextResponse.json(
+      { error: "Invalid chatId" },
+      { status: 400 }
+    );
+  }
+  const { chatId } = parsed.data;
+
+  // 2) auth
   const session = await getServerSession(authOptions);
   if (!session?.user?.id) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    return NextResponse.json(
+      { error: "Unauthorized" },
+      { status: 401 }
+    );
   }
 
-  const chat = await prisma.chat.findUnique({
-    where: { id: chatId },
-    include: {
-      // only load chatUsers so we can check membership
-      chatUsers: { select: { userId: true } },
-      messages: {
-        orderBy: { createdAt: "asc" },
-        include: { sender: { select: { id: true, username: true } } },
-      },
-    },
+  // 3) membership guard
+  const member = await prisma.chatUser.findUnique({
+    where: { chatId_userId: { chatId, userId: session.user.id } },
   });
-
-  if (!chat || !chat.chatUsers.some((cu) => cu.userId === session.user.id)) {
-    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+  if (!member) {
+    return NextResponse.json(
+      { error: "Forbidden" },
+      { status: 403 }
+    );
   }
 
-  return NextResponse.json(chat.messages);
+  // 4) fetch & return
+  const messages = await prisma.message.findMany({
+    where: { chatId },
+    include: { sender: { select: { id: true, username: true } } },
+    orderBy: { createdAt: "asc" },
+  });
+  return NextResponse.json(messages);
 }
 
 export async function POST(
