@@ -1,7 +1,7 @@
 import './globals.css';
 import type { Metadata } from 'next';
 import Navbar from "@/components/Navbar";
-import Providers from "@/components/Providers"; // ✅ new
+import Providers from "@/components/Providers";
 
 export const metadata: Metadata = {
   title: 'Chatty',

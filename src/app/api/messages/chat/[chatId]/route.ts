@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getServerSession } from "next-auth/next";
-import { authOptions } from "../../../auth/[...nextauth]/route";
+import { authOptions } from "@/app/api/auth/[...nextauth]/route";
 import { prisma } from "@/lib/db";
 import { chatParamsSchema, messageCreateSchema } from "@/lib/schemas";
 
@@ -10,23 +10,24 @@ export async function GET(
   req: NextRequest,
   { params }: { params: { chatId: string } }
 ) {
+  // params comes in as a Promise<...>, so await it first
+  const realParams = await params;
+
+  // now realParams === { chatId: string }
+  console.log("[api] realParams:", realParams);
+
   // 1) validate chatId
-  const parsed = chatParamsSchema.safeParse(params);
+  const parsed = chatParamsSchema.safeParse(realParams);
+  console.log("[api] Zod safeParse:", parsed);
   if (!parsed.success) {
-    return NextResponse.json(
-      { error: "Invalid chatId" },
-      { status: 400 }
-    );
+    return NextResponse.json({ error: parsed.error.issues[0].message }, { status: 400 });
   }
   const { chatId } = parsed.data;
 
   // 2) auth
   const session = await getServerSession(authOptions);
   if (!session?.user?.id) {
-    return NextResponse.json(
-      { error: "Unauthorized" },
-      { status: 401 }
-    );
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
   // 3) membership guard
@@ -34,10 +35,7 @@ export async function GET(
     where: { chatId_userId: { chatId, userId: session.user.id } },
   });
   if (!member) {
-    return NextResponse.json(
-      { error: "Forbidden" },
-      { status: 403 }
-    );
+    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }
 
   // 4) fetch & return

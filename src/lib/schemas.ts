@@ -5,7 +5,8 @@ export const userSearchSchema = z.object({
 });
 
 export const chatParamsSchema = z.object({
-  chatId: z.string().cuid("Invalid chatId"),
+  // enforce Prisma CUID v2 format
+  chatId: z.string().cuid2("Invalid chatId"),
 });
 
 export const chatSelectSchema = z.object({

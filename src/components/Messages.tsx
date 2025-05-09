@@ -15,9 +15,14 @@ interface User {
     username: string;
 }
 
-function uniqById(arr: Message[]): Message[] {
+// dedupe helper
+function uniqById(arr: unknown): Message[] {
+    if (!Array.isArray(arr)) {
+        console.warn("uniqById: expected Message[], got:", arr);
+        return [];
+    }
     const seen = new Set<string>();
-    return arr.filter((m) => {
+    return (arr as Message[]).filter((m) => {
         if (seen.has(m.id)) return false;
         seen.add(m.id);
         return true;
@@ -39,16 +44,35 @@ export default function RealtimeMessages({
     const scrollAnchor = useRef<HTMLDivElement>(null);
     const [typingUsers, setTypingUsers] = useState<Set<string>>(new Set());
 
-    // initial load
+    // 1) initial load
     useEffect(() => {
-        fetch(`/api/messages/chat/${chatId}`)
-            .then((r) => r.json())
-            .then((msgs: Message[]) => {
+        console.log("[ui] fetching messages for chatId =", chatId);
+        fetch(`/api/messages/chat/${chatId}`, {
+            credentials: "include", // ← send NextAuth cookie
+            headers: { "Content-Type": "application/json" },
+        })
+            .then(async (res) => {
+                console.log("[ui] messages fetch status:", res.status);
+                if (!res.ok) {
+                    console.error("Failed to load messages:", await res.text());
+                    return [];
+                }
+                return res.json();
+            })
+            .then((body) => {
+                const msgs = Array.isArray(body)
+                    ? body
+                    : Array.isArray((body as any).messages)
+                    ? (body as any).messages
+                    : [];
                 setMessages(uniqById(msgs));
+            })
+            .catch((err) => {
+                console.error("Messages fetch failed:", err);
             });
     }, [chatId]);
 
-    // pseudo-socket subscription
+    // 2) real-time subscription (unchanged)
     useEffect(() => {
         let socketInstance: any;
         (async () => {
@@ -59,8 +83,11 @@ export default function RealtimeMessages({
             });
 
             // wire up new messages
-            const unsubscribe = subscribeToNewMessages((newMsg: Message) => {
-                setMessages((prev) => uniqById([...prev, newMsg]));
+            const unsubscribe = subscribeToNewMessages((payload: any) => {
+                // normalize out any envelope: { message: {...} }
+                const m = payload.message ?? payload;
+                console.log("socket payload:", payload);
+                setMessages((prev) => uniqById([...prev, m]));
             });
 
             socketInstance.on("userJoined", (user: User) =>
