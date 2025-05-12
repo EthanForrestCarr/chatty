@@ -1,7 +1,7 @@
 'use client';
 
-import { useState, useRef } from "react";
-import { initSocket } from "@/lib/socket";
+import { useState, useRef } from 'react';
+import { initSocket } from '@/lib/socket';
 
 export default function ChatInput({
   chatId,
@@ -10,18 +10,21 @@ export default function ChatInput({
   chatId: string;
   currentUser: { id: string; username: string };
 }) {
-  const [content, setContent] = useState("");
+  const [content, setContent] = useState('');
   const typingTimeout = useRef<NodeJS.Timeout | null>(null);
 
   const sendTyping = async () => {
-    const socket = await initSocket();
-    socket.emit("typing", chatId, currentUser);
+    try {
+      const socket = await initSocket();
+      socket.emit('typing', chatId, currentUser);
+    } catch (err) {
+      console.error('Failed to send typing event:', err);
+    }
   };
 
   const handleChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
     setContent(e.target.value);
 
-    // debounce typing events
     if (typingTimeout.current) clearTimeout(typingTimeout.current);
     sendTyping();
     typingTimeout.current = setTimeout(sendTyping, 2000);
@@ -30,16 +33,21 @@ export default function ChatInput({
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!content.trim()) return;
-    const socket = await initSocket();
-    const msg = {
-      chatId,
-      id: crypto.randomUUID(),
-      content,
-      sender: currentUser,
-      createdAt: new Date().toISOString(),
-    };
-    socket.emit("message", msg);
-    setContent("");
+
+    try {
+      const socket = await initSocket();
+      const msg = {
+        chatId,
+        id: crypto.randomUUID(),
+        content,
+        sender: currentUser,
+        createdAt: new Date().toISOString(),
+      };
+      socket.emit('message', msg);
+      setContent('');
+    } catch (err) {
+      console.error('Failed to send message:', err);
+    }
   };
 
   return (
@@ -48,7 +56,7 @@ export default function ChatInput({
         value={content}
         onChange={handleChange}
         onKeyDown={(e) => {
-          if (e.key === "Enter" && !e.shiftKey) {
+          if (e.key === 'Enter' && !e.shiftKey) {
             e.preventDefault();
             handleSubmit(e);
           }
@@ -58,10 +66,7 @@ export default function ChatInput({
         className="border p-2 rounded w-full resize-none"
         autoFocus
       />
-      <button
-        type="submit"
-        className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700"
-      >
+      <button type="submit" className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700">
         Send
       </button>
     </form>

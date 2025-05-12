@@ -1,37 +1,53 @@
 'use client';
 
-import { useState, useEffect, useRef } from "react";
-import { useRouter } from "next/navigation";
+import { useState, useEffect, useRef } from 'react';
+import { useRouter } from 'next/navigation';
+
+async function searchUsers(query: string) {
+  const res = await fetch(`/api/users/search?query=${encodeURIComponent(query)}`, {
+    credentials: 'include',
+  });
+  if (!res.ok) {
+    throw new Error(await res.text());
+  }
+  return res.json() as Promise<{ id: string; username: string }[]>;
+}
 
 export default function UserSearchInput() {
-  const [query, setQuery] = useState("");
+  const [query, setQuery] = useState('');
   const [results, setResults] = useState<{ id: string; username: string }[]>([]);
   const router = useRouter();
   const timeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   useEffect(() => {
     if (!query) return setResults([]);
-
     if (timeoutRef.current) clearTimeout(timeoutRef.current);
 
     timeoutRef.current = setTimeout(async () => {
-      const res = await fetch(`/api/users/search?query=${query}`);
-      const users = await res.json();
-      setResults(users);
+      try {
+        const users = await searchUsers(query);
+        setResults(users);
+      } catch (err) {
+        console.error('User search failed:', err);
+      }
     }, 300);
+
+    return () => {
+      if (timeoutRef.current) clearTimeout(timeoutRef.current);
+    };
   }, [query]);
 
   const handleSelect = async (userId: string) => {
-    const res = await fetch("/api/chats/select", {
-      method: "POST",
+    const res = await fetch('/api/chats/select', {
+      method: 'POST',
       body: JSON.stringify({ userId }),
-      headers: { "Content-Type": "application/json" },
+      headers: { 'Content-Type': 'application/json' },
     });
 
     // bail on HTTP errors
     if (!res.ok) {
       const err = await res.json().catch(() => null);
-      console.error("Failed to start chat:", err ?? res.statusText);
+      console.error('Failed to start chat:', err ?? res.statusText);
       return;
     }
 
@@ -44,7 +60,7 @@ export default function UserSearchInput() {
     // now it’s safe to parse
     const data = await res.json();
     if (!data?.chatId) {
-      console.error("No chatId in response");
+      console.error('No chatId in response');
       return;
     }
     router.push(`/chat/${data.chatId}`);
