@@ -100,7 +100,6 @@ Jest will run any available API route or utility tests.
 
 ### UX / UI
 
-- ✅ Unread-message badges
 - ✅ Message reactions & emoji picker
 - ✅ Edit messages & undo delete grace period
 - ✅ Attachment support (S3 or custom backend)

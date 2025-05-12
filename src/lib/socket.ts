@@ -1,23 +1,34 @@
-import { io, Socket } from "socket.io-client";
+import { io, Socket } from 'socket.io-client';
+import type {
+  ChatMessage,
+  MessageEnvelope,
+  ClientToServerEvents,
+  ServerToClientEvents,
+} from './socket-types';
 
-let socket: Socket | null = null;
+let socket: Socket<ServerToClientEvents, ClientToServerEvents> | null = null;
 
 export async function initSocket() {
-  if (socket) return socket;
-  await fetch("/api/socketio");
-  socket = io();
+  if (!socket) {
+    await fetch('/api/socketio');
+    const url = process.env.NEXT_PUBLIC_SOCKET_URL ?? window.location.origin;
+    // drop the generic on `io<>` and cast instead:
+    socket = io(url, { transports: ['websocket'] }) as Socket<
+      ServerToClientEvents,
+      ClientToServerEvents
+    >;
+  }
   return socket;
 }
 
-// Subscribe to the "message" event for new chat messages.
-// Returns an unsubscribe function.
 export function subscribeToNewMessages(
-  cb: (msg: any) => void
+  cb: (payload: ChatMessage | MessageEnvelope) => void
 ): () => void {
-  if (!socket) throw new Error("Socket not initialized");
-  const s = socket;  // now TS knows `s` is non-null
-  s.on("message", cb);
+  if (!socket) throw new Error('Socket not initialized');
+  const s = socket; // now `s` is definitely non-null
+  const handler = (msg: ChatMessage | MessageEnvelope) => cb(msg);
+  s.on('message', handler);
   return () => {
-    s.off("message", cb);
+    s.off('message', handler);
   };
 }
