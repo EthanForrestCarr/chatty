@@ -1,7 +1,9 @@
 import './globals.css';
 import type { Metadata } from 'next';
-import Navbar from "@/components/Navbar";
-import Providers from "@/components/Providers";
+import { Suspense } from 'react';
+import Navbar from '@/components/Navbar';
+import Providers from '@/components/Providers';
+import Loading from './loading';
 
 export const metadata: Metadata = {
   title: 'Chatty',
@@ -14,7 +16,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       <body>
         <Providers>
           <Navbar />
-          {children}
+          <Suspense fallback={<Loading />}>{children}</Suspense>
         </Providers>
       </body>
     </html>
