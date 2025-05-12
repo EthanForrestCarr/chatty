@@ -1,48 +1,148 @@
-UX/UI Polish
-Unread-message badges
-Show a count next to each chat in your dashboard for messages you haven’t seen yet.
+# 💬 Chatty
 
-Message reactions
-Let users “like” or react to individual bubbles (💖, 👍, 😂, etc.) by adding a small emoji picker.
+**Chatty** is a simple, real-time chat application built with **Next.js**, **Socket.IO**, and **PostgreSQL**. It supports one-on-one conversations and lays the foundation for scalable, modern communication features.
 
-Edit & Undo Delete
-Allow senders to edit or “undo” a deletion within a short grace period.
+---
 
-Attachment support
-Drag-and-drop images or files, upload them to S3 or your own storage, and render previews inline.
+## 🚀 Features
 
-Mobile responsiveness
-Tweak styling so your chat UI works beautifully on small screens.
+- ⚡ Real-time messaging via Socket.IO
+- 🔒 Auth with NextAuth.js
+- 🗃️ PostgreSQL + Prisma ORM
+- 🧪 Unit testing with Jest
+- 🌱 Seeded development environment
+- 🔧 Scalable architecture for future growth
 
-Features & Scaling
-Group chats / channels
-Extend your schema so chats can have more than two users, and add UI for creating/joining channels.
+---
 
-Read-receipts & “last seen” timestamps
-Mark messages as “read” when the recipient’s Socket.IO client sees them, and show “Last seen at 3:42 PM.”
+## 🛠️ Setup & Onboarding
 
-Push notifications
-Integrate the Web Push API so users get notified even if the tab is in the background.
+### 1. Clone & Install
 
-Horizontal scaling with Redis adapter
-Swap in socket.io-redis so your WebSocket server can run on multiple instances behind a load-balancer.
+```bash
+git clone https://github.com/your-org/chatty.git
+cd chatty
+npm install
+```
 
-DevOps & Quality
-Automated testing
-Write unit tests for your API routes (e.g. with Jest) and E2E tests for your chat flows (with Playwright).
+### 2. Environment Variables
 
-Continuous deployment
-Hook up GitHub Actions to lint, test, and deploy to Vercel (or another host) on every push to main.
+Copy the example environment config and fill in your details:
 
-Monitoring
-Add logging & alerting (Sentry / Logflare / etc.) so you get real-time error reports from production.
+```bash
+cp .env.example .env.local
+```
 
-Type-safe API contracts
-Consider using Zod or TypeScript’s api.ts approach to validate inputs/outputs at runtime.
+Edit `.env.local`:
 
-Long-Term
-End-to-end encryption (E2EE) so only clients can read messages.
+```env
+DATABASE_URL="postgresql://USER:PASSWORD@HOST:PORT/DATABASE"
+NEXTAUTH_URL="http://localhost:3000"
+# SOCKET_URL= (optional if different from NEXTAUTH_URL)
+# Add any other required variables
+```
 
-Voice & video calls via WebRTC.
+> ✅ Ensure `.env.local` is included in `.gitignore`.
 
-AI-powered features: message summarization, content moderation, sentiment analysis.
+---
+
+### 3. Database Setup
+
+Run the following to initialize your development database:
+
+```bash
+npm run migrate:dev     # Apply new Prisma migrations
+npm run migrate:reset   # Reset the database (WARNING: deletes all data)
+npm run seed            # Seed the database with demo data
+```
+
+---
+
+### 4. Run the App
+
+Start the local development server:
+
+```bash
+npm run dev
+```
+
+Open your browser at: [http://localhost:3000](http://localhost:3000)
+
+---
+
+### 5. Run Tests
+
+Execute all available tests:
+
+```bash
+npm test
+```
+
+Jest will run any available API route or utility tests.
+
+---
+
+## 🧾 NPM Scripts
+
+| Script          | Description                      |
+| --------------- | -------------------------------- |
+| `dev`           | Start Next.js development server |
+| `build`         | Create a production build        |
+| `start`         | Run the production build         |
+| `migrate:dev`   | Run Prisma migrations            |
+| `migrate:reset` | Reset the database               |
+| `seed`          | Seed the database                |
+| `test`          | Run Jest tests                   |
+
+---
+
+## 🧭 Future Development
+
+### UX / UI
+
+- ✅ Unread-message badges
+- ✅ Message reactions & emoji picker
+- ✅ Edit messages & undo delete grace period
+- ✅ Attachment support (S3 or custom backend)
+- ✅ Fully responsive mobile UI
+
+### Features & Scaling
+
+- ✅ Group chats & channels
+- ✅ Read receipts & "last seen" timestamps
+- ✅ Web push notifications
+- ✅ Redis adapter for horizontal scaling
+
+### DevOps & Quality
+
+- ✅ E2E tests with Playwright
+- ✅ CI/CD (GitHub Actions + Vercel)
+- ✅ Monitoring with Sentry / Logflare
+
+### Long-Term Roadmap
+
+- 🔐 End-to-end encryption (E2EE)
+- 🎥 Voice & video calling (WebRTC)
+- 🧠 AI-powered features (summaries, moderation, etc.)
+
+---
+
+## 📄 License
+
+[MIT](./LICENSE)
+
+---
+
+## 🤝 Contributing
+
+Pull requests are welcome! For major changes, please open an issue first to discuss what you’d like to change.
+
+---
+
+## 🧑‍💻 Built With
+
+- [Next.js](https://nextjs.org/)
+- [Socket.IO](https://socket.io/)
+- [PostgreSQL](https://www.postgresql.org/)
+- [Prisma](https://www.prisma.io/)
+- [Jest](https://jestjs.io/)
