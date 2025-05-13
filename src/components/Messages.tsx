@@ -3,9 +3,8 @@
 import { useEffect, useRef, useState } from 'react';
 import { initSocket, subscribeToNewMessages } from '@/lib/socket';
 import type { Socket } from 'socket.io-client';
-import { Message, MessageEnvelope, User } from './Messages/types';
+import { Message, MessageEnvelope } from './Messages/types';
 import TypingIndicator from './Messages/TypingIndicator';
-import OnlinePresenceBar from './Messages/OnlinePresenceBar';
 import Notifications from './Messages/Notifications';
 import MessageBubble from './Messages/MessageBubble';
 
@@ -34,7 +33,6 @@ export default function RealtimeMessages({
 }) {
   const [messages, setMessages] = useState<Message[]>([]);
   const [notifications, setNotifications] = useState<string[]>([]);
-  const [online, setOnline] = useState<User[]>([]);
   const scrollAnchor = useRef<HTMLDivElement>(null);
   const [typingUsers, setTypingUsers] = useState<Set<string>>(new Set());
 
@@ -76,14 +74,13 @@ export default function RealtimeMessages({
         setMessages((prev) => uniqById([...prev, m]));
       });
 
-      socketInstance.on('userJoined', (user: User) =>
+      socketInstance.on('userJoined', (user) =>
         setNotifications((n) => [...n, `${user.username} joined`])
       );
-      socketInstance.on('userLeft', (user: User) =>
+      socketInstance.on('userLeft', (user) =>
         setNotifications((n) => [...n, `${user.username} left`])
       );
-      socketInstance.on('presence', (users: User[]) => setOnline(users));
-      socketInstance.on('typing', (user: User) => {
+      socketInstance.on('typing', (user) => {
         if (user.id !== currentUserId) {
           setTypingUsers((s) => new Set(s).add(user.username));
           setTimeout(() => {
@@ -105,7 +102,6 @@ export default function RealtimeMessages({
         });
         socketInstance.off('userJoined');
         socketInstance.off('userLeft');
-        socketInstance.off('presence');
         socketInstance.off('typing');
         unsubscribeFn();
       }
@@ -114,7 +110,6 @@ export default function RealtimeMessages({
 
   return (
     <div className="space-y-2 mb-6 border p-4 rounded max-h-[60vh] overflow-y-auto">
-      <OnlinePresenceBar online={online} currentUserId={currentUserId} />
       <Notifications notifications={notifications} />
       {messages.length === 0 && (
         <p className="text-center text-gray-500 italic">No messages yet. Say hi!</p>
