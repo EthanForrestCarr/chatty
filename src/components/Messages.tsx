@@ -3,20 +3,11 @@
 import { useEffect, useRef, useState } from 'react';
 import { initSocket, subscribeToNewMessages } from '@/lib/socket';
 import type { Socket } from 'socket.io-client';
-
-interface Message {
-  id: string;
-  content: string;
-  createdAt: string;
-  sender: { id: string; username: string };
-}
-interface MessageEnvelope {
-  message: Message;
-}
-interface User {
-  id: string;
-  username: string;
-}
+import { Message, MessageEnvelope, User } from './Messages/types';
+import TypingIndicator from './Messages/TypingIndicator';
+import OnlinePresenceBar from './Messages/OnlinePresenceBar';
+import Notifications from './Messages/Notifications';
+import MessageBubble from './Messages/MessageBubble';
 
 // dedupe helper
 function uniqById(arr: unknown): Message[] {
@@ -121,55 +112,17 @@ export default function RealtimeMessages({
     };
   }, [chatId, currentUserId, currentUsername]);
 
-  // auto-scroll
-  useEffect(() => {
-    scrollAnchor.current?.scrollIntoView({ behavior: 'smooth' });
-  }, [messages]);
-
   return (
     <div className="space-y-2 mb-6 border p-4 rounded max-h-[60vh] overflow-y-auto">
-      {/* typing indicator */}
-      {typingUsers.size > 0 && (
-        <p className="text-sm italic text-gray-500">
-          {Array.from(typingUsers).join(', ')} {typingUsers.size > 1 ? 'are' : 'is'} typing…
-        </p>
-      )}
-
-      {/* Online presence bar */}
-      {online.length > 0 && (
-        <p className="text-xs text-green-600 mb-1">
-          Online now: {online.map((u) => (u.id === currentUserId ? 'You' : u.username)).join(', ')}
-        </p>
-      )}
-
-      {/* join/leave notifications */}
-      {notifications.map((note, i) => (
-        <p key={i} className="text-center text-gray-500 italic text-sm">
-          {note}
-        </p>
-      ))}
-
-      {/* message bubbles */}
+      <OnlinePresenceBar online={online} currentUserId={currentUserId} />
+      <Notifications notifications={notifications} />
       {messages.length === 0 && (
         <p className="text-center text-gray-500 italic">No messages yet. Say hi!</p>
       )}
-      {messages.map((msg) => {
-        const isOwn = msg.sender.id === currentUserId;
-        return (
-          <div
-            key={msg.id}
-            className={`max-w-[70%] p-3 rounded-2xl break-words ${
-              isOwn ? 'ml-auto bg-blue-500 text-white' : 'mr-auto bg-gray-200 text-black'
-            }`}
-          >
-            <p className="text-sm font-semibold mb-1">{isOwn ? 'You' : msg.sender.username}</p>
-            <p className="whitespace-pre-wrap">{msg.content}</p>
-            <p className="text-xs text-right mt-1 text-white/70">
-              {new Date(msg.createdAt).toLocaleTimeString()}
-            </p>
-          </div>
-        );
-      })}
+      {messages.map((msg) => (
+        <MessageBubble key={msg.id} msg={msg} currentUserId={currentUserId} />
+      ))}
+      <TypingIndicator typingUsers={typingUsers} />
       <div ref={scrollAnchor} />
     </div>
   );
