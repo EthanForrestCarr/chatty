@@ -1,17 +1,41 @@
 import React, { useEffect, useRef } from 'react';
+import ReactionPicker from '@/components/ReactionPicker';
+import { initSocket } from '@/lib/socket';
 import { Message } from './types';
 
 interface MessageBubbleProps {
   msg: Message;
   currentUserId: string;
+  currentUsername: string;
 }
 
-const MessageBubble: React.FC<MessageBubbleProps> = ({ msg, currentUserId }) => {
+const MessageBubble: React.FC<MessageBubbleProps> = ({ msg, currentUserId, currentUsername }) => {
   const isOwn = msg.sender.id === currentUserId;
   const ref = useRef<HTMLDivElement>(null);
   useEffect(() => {
     ref.current?.scrollIntoView({ behavior: 'smooth' });
   }, []);
+
+  // group reactions by emoji
+  const reactionCounts =
+    msg.reactions?.reduce<Record<string, number>>((acc, r) => {
+      acc[r.emoji] = (acc[r.emoji] || 0) + 1;
+      return acc;
+    }, {}) ?? {};
+
+  const handleReaction = async (emoji: string) => {
+    console.log('Sending reaction', emoji, 'for message', msg.id);
+    try {
+      const socket = await initSocket();
+      socket.emit('reaction', {
+        messageId: msg.id,
+        emoji,
+        user: { id: currentUserId, username: currentUsername },
+      });
+    } catch (err) {
+      console.error('Failed to emit reaction event:', err);
+    }
+  };
 
   return (
     <div
@@ -26,6 +50,14 @@ const MessageBubble: React.FC<MessageBubbleProps> = ({ msg, currentUserId }) => 
       <p className="text-xs text-right mt-1 text-white/70">
         {new Date(msg.createdAt).toLocaleTimeString()}
       </p>
+      <div className="flex items-center space-x-2 mt-2">
+        {Object.entries(reactionCounts).map(([emoji, count]) => (
+          <span key={emoji} className="text-sm">
+            {emoji} {count}
+          </span>
+        ))}
+        <ReactionPicker onSelect={handleReaction} />
+      </div>
     </div>
   );
 };

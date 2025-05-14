@@ -1,9 +1,17 @@
 // Type definitions for the Messages components
+export interface Reaction {
+  id: string;
+  emoji: string;
+  user: User;
+  messageId: string;
+}
+
 export interface Message {
   id: string;
   content: string;
   createdAt: string;
   sender: { id: string; username: string };
+  reactions?: Reaction[];
 }
 
 export interface MessageEnvelope {

@@ -1,6 +1,6 @@
 generator client {
   provider = "prisma-client-js"
-  output = "../node_modules/.prisma/client"
+  output   = "../node_modules/.prisma/client"
 }
 
 datasource db {
@@ -9,15 +9,16 @@ datasource db {
 }
 
 model User {
-  id            String   @id @default(cuid())
-  email         String   @unique
-  username      String   @unique
-  password      String
-  emailVerified DateTime?
-  sessions      Session[]
-  accounts      Account[]
-  messages      Message[]
-  chatUsers     ChatUser[]
+  id               String            @id @default(cuid())
+  email            String            @unique
+  username         String            @unique
+  password         String
+  emailVerified    DateTime?
+  sessions         Session[]
+  accounts         Account[]
+  messages         Message[]
+  chatUsers        ChatUser[]
+  messageReactions MessageReaction[]
 }
 
 model Session {
@@ -29,27 +30,27 @@ model Session {
 }
 
 model Account {
-  id                 String  @id @default(cuid())
-  userId             String
-  user               User    @relation(fields: [userId], references: [id])
-  type               String
-  provider           String
-  providerAccountId  String
-  refresh_token      String? 
-  access_token       String?
-  expires_at         Int?
-  token_type         String?
-  scope              String?
-  id_token           String?
-  session_state      String?
+  id                String  @id @default(cuid())
+  userId            String
+  user              User    @relation(fields: [userId], references: [id])
+  type              String
+  provider          String
+  providerAccountId String
+  refresh_token     String?
+  access_token      String?
+  expires_at        Int?
+  token_type        String?
+  scope             String?
+  id_token          String?
+  session_state     String?
 
   @@unique([provider, providerAccountId])
 }
 
 model Chat {
-  id        String    @id @default(cuid())
+  id        String     @id @default(cuid())
   messages  Message[]
-  createdAt DateTime  @default(now())
+  createdAt DateTime   @default(now())
   chatUsers ChatUser[]
 }
 
@@ -60,15 +61,28 @@ model Message {
   chatId    String
   createdAt DateTime @default(now())
 
-  sender    User     @relation(fields: [senderId], references: [id])
-  chat      Chat     @relation(fields: [chatId], references: [id])
+  sender    User              @relation(fields: [senderId], references: [id])
+  chat      Chat              @relation(fields: [chatId], references: [id])
+  reactions MessageReaction[]
+}
+
+model MessageReaction {
+  id        String   @id @default(cuid())
+  message   Message  @relation(fields: [messageId], references: [id])
+  messageId String
+  user      User     @relation(fields: [userId], references: [id])
+  userId    String
+  emoji     String
+  createdAt DateTime @default(now())
+
+  @@unique([messageId, userId, emoji])
 }
 
 model ChatUser {
-  chat      Chat      @relation(fields: [chatId], references: [id])
-  chatId    String
-  user      User      @relation(fields: [userId], references: [id])
-  userId    String
+  chat   Chat   @relation(fields: [chatId], references: [id])
+  chatId String
+  user   User   @relation(fields: [userId], references: [id])
+  userId String
 
   lastReadAt DateTime?
 

@@ -30,10 +30,10 @@ npm install
 Copy the example environment config and fill in your details:
 
 ```bash
-cp .env.example .env.local
+cp .env.example .env
 ```
 
-Edit `.env.local`:
+Edit `.env`:
 
 ```env
 DATABASE_URL="postgresql://USER:PASSWORD@HOST:PORT/DATABASE"
@@ -42,7 +42,7 @@ NEXTAUTH_URL="http://localhost:3000"
 # Add any other required variables
 ```
 
-> ✅ Ensure `.env.local` is included in `.gitignore`.
+> ✅ Ensure `.env` is included in `.gitignore`.
 
 ---
 

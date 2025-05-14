@@ -17,6 +17,7 @@ export interface ClientToServerEvents {
   leave: (chatId: string, user: ChatUser) => void;
   typing: (chatId: string, user: ChatUser) => void;
   message: (payload: ChatMessage & { chatId: string }) => void;
+  reaction: (payload: { messageId: string; emoji: string; user: ChatUser }) => void;
 }
 
 export interface ServerToClientEvents {
@@ -25,4 +26,12 @@ export interface ServerToClientEvents {
   presence: (users: ChatUser[]) => void;
   typing: (user: ChatUser) => void;
   message: (payload: ChatMessage | MessageEnvelope) => void;
+  reaction: (payload: Reaction) => void;
+}
+
+export interface Reaction {
+  id: string;
+  emoji: string;
+  user: ChatUser;
+  messageId: string;
 }

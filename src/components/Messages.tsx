@@ -95,6 +95,15 @@ export default function RealtimeMessages({
         setBanner(`${user.username} left`);
         setTimeout(() => setBanner(null), 3000);
       });
+      socketInstance.on('reaction', (reaction) => {
+        setMessages((prev) =>
+          prev.map((m) =>
+            m.id === reaction.messageId
+              ? { ...m, reactions: [...(m.reactions ?? []), reaction] }
+              : m
+          )
+        );
+      });
     })().catch((err) => console.error('socket setup failed:', err));
 
     return () => {
@@ -106,6 +115,7 @@ export default function RealtimeMessages({
         socketInstance.off('typing');
         socketInstance.off('userJoined');
         socketInstance.off('userLeft');
+        socketInstance.off('reaction');
         unsubscribeFn();
       }
     };
@@ -128,7 +138,12 @@ export default function RealtimeMessages({
         <p className="text-center text-gray-500 italic">No messages yet. Say hi!</p>
       )}
       {messages.map((msg) => (
-        <MessageBubble key={msg.id} msg={msg} currentUserId={currentUserId} />
+        <MessageBubble
+          key={msg.id}
+          msg={msg}
+          currentUserId={currentUserId}
+          currentUsername={currentUsername}
+        />
       ))}
       <TypingIndicator typingUsers={typingUsers} />
       <div ref={scrollAnchor} />
