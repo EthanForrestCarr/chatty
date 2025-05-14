@@ -143,6 +143,7 @@ export default function RealtimeMessages({
           msg={msg}
           currentUserId={currentUserId}
           currentUsername={currentUsername}
+          onDelete={(id) => setMessages((prev) => prev.filter((m) => m.id !== id))}
         />
       ))}
       <TypingIndicator typingUsers={typingUsers} />

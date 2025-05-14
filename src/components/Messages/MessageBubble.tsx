@@ -7,9 +7,15 @@ interface MessageBubbleProps {
   msg: Message;
   currentUserId: string;
   currentUsername: string;
+  onDelete?: (id: string) => void;
 }
 
-const MessageBubble: React.FC<MessageBubbleProps> = ({ msg, currentUserId, currentUsername }) => {
+const MessageBubble: React.FC<MessageBubbleProps> = ({
+  msg,
+  currentUserId,
+  currentUsername,
+  onDelete,
+}) => {
   const isOwn = msg.sender.id === currentUserId;
   const ref = useRef<HTMLDivElement>(null);
   useEffect(() => {
@@ -37,6 +43,20 @@ const MessageBubble: React.FC<MessageBubbleProps> = ({ msg, currentUserId, curre
     }
   };
 
+  const handleDelete = async () => {
+    if (!window.confirm('Delete this message?')) return;
+    try {
+      const res = await fetch(`/api/messages/message/${msg.id}`, {
+        method: 'DELETE',
+        credentials: 'include',
+      });
+      if (!res.ok) throw new Error('Delete failed');
+      onDelete?.(msg.id);
+    } catch (err) {
+      console.error('Failed to delete message:', err);
+    }
+  };
+
   return (
     <div
       ref={ref}
@@ -57,6 +77,11 @@ const MessageBubble: React.FC<MessageBubbleProps> = ({ msg, currentUserId, curre
           </span>
         ))}
         <ReactionPicker onSelect={handleReaction} />
+        {isOwn && onDelete && (
+          <button onClick={handleDelete} className="ml-2 text-xs text-red-500 hover:underline">
+            Delete
+          </button>
+        )}
       </div>
     </div>
   );
