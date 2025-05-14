@@ -5,7 +5,6 @@ import { initSocket, subscribeToNewMessages } from '@/lib/socket';
 import type { Socket } from 'socket.io-client';
 import { Message, MessageEnvelope } from './Messages/types';
 import TypingIndicator from './Messages/TypingIndicator';
-import Notifications from './Messages/Notifications';
 import MessageBubble from './Messages/MessageBubble';
 
 // dedupe helper
@@ -15,9 +14,9 @@ function uniqById(arr: unknown): Message[] {
     return [];
   }
   const seen = new Set<string>();
-  return (arr as Message[]).filter((m) => {
-    if (seen.has(m.id)) return false;
-    seen.add(m.id);
+  return (arr as Message[]).filter((item) => {
+    if (seen.has(item.id)) return false;
+    seen.add(item.id);
     return true;
   });
 }
@@ -32,7 +31,8 @@ export default function RealtimeMessages({
   currentUsername: string;
 }) {
   const [messages, setMessages] = useState<Message[]>([]);
-  const [notifications, setNotifications] = useState<string[]>([]);
+  // banner text for join/leave notifications
+  const [banner, setBanner] = useState<string | null>(null);
   const scrollAnchor = useRef<HTMLDivElement>(null);
   const [typingUsers, setTypingUsers] = useState<Set<string>>(new Set());
 
@@ -74,12 +74,6 @@ export default function RealtimeMessages({
         setMessages((prev) => uniqById([...prev, m]));
       });
 
-      socketInstance.on('userJoined', (user) =>
-        setNotifications((n) => [...n, `${user.username} joined`])
-      );
-      socketInstance.on('userLeft', (user) =>
-        setNotifications((n) => [...n, `${user.username} left`])
-      );
       socketInstance.on('typing', (user) => {
         if (user.id !== currentUserId) {
           setTypingUsers((s) => new Set(s).add(user.username));
@@ -92,6 +86,15 @@ export default function RealtimeMessages({
           }, 3000);
         }
       });
+      // sticky banner for join/leave
+      socketInstance.on('userJoined', (user) => {
+        setBanner(`${user.username} joined`);
+        setTimeout(() => setBanner(null), 3000);
+      });
+      socketInstance.on('userLeft', (user) => {
+        setBanner(`${user.username} left`);
+        setTimeout(() => setBanner(null), 3000);
+      });
     })().catch((err) => console.error('socket setup failed:', err));
 
     return () => {
@@ -100,17 +103,27 @@ export default function RealtimeMessages({
           id: currentUserId,
           username: currentUsername,
         });
+        socketInstance.off('typing');
         socketInstance.off('userJoined');
         socketInstance.off('userLeft');
-        socketInstance.off('typing');
         unsubscribeFn();
       }
     };
   }, [chatId, currentUserId, currentUsername]);
 
   return (
-    <div className="space-y-2 mb-6 border p-4 rounded max-h-[60vh] overflow-y-auto">
-      <Notifications notifications={notifications} />
+    <div className="relative mb-6 border p-4 rounded max-h-[60vh] overflow-x-hidden overflow-y-auto">
+      {/* sticky banner sliding in/out */}
+      <div
+        className={
+          `sticky top-0 z-10 mx-auto mb-2 max-w-[80%] px-4 py-2 text-center text-sm italic rounded-2xl transform transition-transform duration-300 ` +
+          (banner
+            ? `translate-x-0 ${banner.includes('joined') ? 'bg-green-500 text-white' : 'bg-red-500 text-white'}`
+            : 'translate-x-full')
+        }
+      >
+        {banner || ''}
+      </div>
       {messages.length === 0 && (
         <p className="text-center text-gray-500 italic">No messages yet. Say hi!</p>
       )}
