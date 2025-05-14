@@ -35,27 +35,30 @@ export async function GET(_req: NextRequest, { params }: { params: { chatId: str
     return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
   }
 
-  // 4a) fetch base messages with sender info
-  const messages = await prisma.message.findMany({
+  // 4) fetch messages along with sender and reactions
+  const raw = await prisma.message.findMany({
     where: { chatId },
-    include: { sender: { select: { id: true, username: true } } },
+    include: {
+      sender: { select: { id: true, username: true } },
+      reactions: {
+        include: { user: { select: { id: true, username: true } } },
+      },
+    },
     orderBy: { createdAt: 'asc' },
   });
-  // 4b) fetch all reactions for these messages
-  const reactionRows = await prisma.messageReaction.findMany({
-    where: { messageId: { in: messages.map((m) => m.id) } },
-    include: { user: { select: { id: true, username: true } } },
-  });
-  // group reactions by messageId
-  const reactionsByMsg: Record<string, typeof reactionRows> = {};
-  for (const r of reactionRows) {
-    if (!reactionsByMsg[r.messageId]) reactionsByMsg[r.messageId] = [];
-    reactionsByMsg[r.messageId].push(r);
-  }
-  // attach reactions to each message object
-  const messagesWithReactions = messages.map((m) => ({
-    ...m,
-    reactions: reactionsByMsg[m.id] || [],
+  // serialize dates and shape output
+  const output = raw.map((m) => ({
+    id: m.id,
+    content: m.content,
+    createdAt: m.createdAt.toISOString(),
+    sender: m.sender,
+    chatId: m.chatId,
+    reactions: m.reactions.map((r) => ({
+      id: r.id,
+      emoji: r.emoji,
+      user: r.user,
+      messageId: r.messageId,
+    })),
   }));
-  return NextResponse.json(messagesWithReactions);
+  return NextResponse.json(output);
 }

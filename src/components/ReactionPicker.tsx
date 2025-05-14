@@ -1,6 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { createPortal } from 'react-dom';
-import Picker from 'emoji-picker-react';
+import EmojiPicker, { EmojiClickData } from 'emoji-picker-react';
 
 interface ReactionPickerProps {
   onSelect: (emoji: string) => void;
@@ -57,10 +57,8 @@ export default function ReactionPicker({ onSelect }: ReactionPickerProps) {
             className="z-50"
             style={{ position: 'absolute', top: position.top, left: position.left }}
           >
-            <Picker
-              /* eslint-disable-next-line @typescript-eslint/no-explicit-any */
-              onEmojiClick={(_event: any, emojiData: any) => {
-                console.log('Emoji clicked:', emojiData.emoji);
+            <EmojiPicker
+              onEmojiClick={(emojiData: EmojiClickData) => {
                 onSelect(emojiData.emoji);
                 setShowPicker(false);
               }}

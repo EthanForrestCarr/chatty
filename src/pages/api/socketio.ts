@@ -78,15 +78,17 @@ export default function SocketHandler(_req: NextApiRequest, res: NextApiResponse
       socket.on('reaction', async ({ messageId, emoji, user }) => {
         const saved = await prisma.messageReaction.create({
           data: { messageId, userId: user.id, emoji },
-          include: {
+          select: {
+            id: true,
+            messageId: true,
+            emoji: true,
             user: { select: { id: true, username: true } },
             message: { select: { chatId: true } },
           },
         });
         const { id, messageId: mId, emoji: e, user: u, message } = saved;
-        const payload = { id, messageId: mId, emoji: e, user: u };
         // broadcast reaction to room
-        io.to(message.chatId).emit('reaction', payload);
+        io.to(message.chatId).emit('reaction', { id, messageId: mId, emoji: e, user: u });
       });
 
       socket.on('disconnecting', () => {
