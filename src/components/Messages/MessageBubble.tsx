@@ -21,12 +21,41 @@ const MessageBubble: React.FC<MessageBubbleProps> = ({
   onUndo,
 }) => {
   const isOwn = msg.sender.id === currentUserId;
+  // compute message creation timestamp
+  const createdTime = new Date(msg.createdAt).getTime();
   // edit state
   const [isEditing, setIsEditing] = useState(false);
   const [draft, setDraft] = useState(msg.content);
-  // allow edit within 10 minutes
-  const createdTime = new Date(msg.createdAt).getTime();
-  const canEdit = isOwn && Date.now() - createdTime < 10 * 60 * 1000;
+  // allow edit within 10 minutes, managed via state
+  const editWindow = 10 * 60 * 1000;
+  const initialCanEdit = isOwn && Date.now() - createdTime < editWindow;
+  const [canEdit, setCanEdit] = useState(initialCanEdit);
+  useEffect(() => {
+    if (!initialCanEdit) return;
+    const elapsed = Date.now() - createdTime;
+    const remaining = editWindow - elapsed;
+    if (remaining > 0) {
+      const timer = setTimeout(() => setCanEdit(false), remaining);
+      return () => clearTimeout(timer);
+    }
+    // already expired
+    setCanEdit(false);
+  }, [initialCanEdit, createdTime]);
+  // allow delete within 30 seconds, managed via state
+  const deleteWindow = 30 * 1000;
+  const initialCanDelete = isOwn && Date.now() - createdTime < deleteWindow;
+  const [canDelete, setCanDelete] = useState(initialCanDelete);
+  useEffect(() => {
+    if (!initialCanDelete) return;
+    const elapsed = Date.now() - createdTime;
+    const remaining = deleteWindow - elapsed;
+    if (remaining > 0) {
+      const timer = setTimeout(() => setCanDelete(false), remaining);
+      return () => clearTimeout(timer);
+    }
+    // already expired
+    setCanDelete(false);
+  }, [initialCanDelete, createdTime]);
   // always initialize ref and scroll effect
   const ref = useRef<HTMLDivElement>(null);
   useEffect(() => {
@@ -142,7 +171,7 @@ const MessageBubble: React.FC<MessageBubbleProps> = ({
             </button>
           </>
         )}
-        {!isPending && isOwn && (
+        {!isPending && canDelete && (
           <button onClick={handleDelete} className="ml-2 text-xs text-red-500 hover:underline">
             Delete
           </button>
