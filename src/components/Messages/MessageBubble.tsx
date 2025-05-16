@@ -1,3 +1,5 @@
+'use client';
+
 import React, { useEffect, useRef } from 'react';
 import ReactionPicker from '@/components/ReactionPicker';
 import { initSocket } from '@/lib/socket';
@@ -44,16 +46,15 @@ const MessageBubble: React.FC<MessageBubbleProps> = ({
   };
 
   const handleDelete = async () => {
+    console.log('💥 Delete button clicked for', msg.id);
     if (!window.confirm('Delete this message?')) return;
     try {
-      const res = await fetch(`/api/messages/message/${msg.id}`, {
-        method: 'DELETE',
-        credentials: 'include',
-      });
-      if (!res.ok) throw new Error('Delete failed');
+      console.log('🚀 Emitting deleteMessage for', msg.id);
+      const socket = await initSocket();
+      socket.emit('deleteMessage', msg.id);
       onDelete?.(msg.id);
     } catch (err) {
-      console.error('Failed to delete message:', err);
+      console.error('Failed to emit deleteMessage:', err);
     }
   };
 

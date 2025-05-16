@@ -10,6 +10,8 @@ interface Params {
 }
 
 export async function POST(req: NextRequest, { params }: Params) {
+  // Next.js App Router params must be awaited
+  const { messageId } = await params;
   const session = await getServerSession(authOptions);
 
   if (!session?.user?.id) {
@@ -23,7 +25,7 @@ export async function POST(req: NextRequest, { params }: Params) {
   }
 
   const message = await prisma.message.findUnique({
-    where: { id: params.messageId },
+    where: { id: messageId },
   });
 
   if (!message || message.senderId !== session.user.id) {
@@ -31,10 +33,10 @@ export async function POST(req: NextRequest, { params }: Params) {
   }
 
   // remove any emoji reactions for this message to avoid FK constraint errors
-  await prisma.messageReaction.deleteMany({ where: { messageId: params.messageId } });
+  await prisma.messageReaction.deleteMany({ where: { messageId } });
 
   await prisma.message.delete({
-    where: { id: params.messageId },
+    where: { id: messageId },
   });
 
   // Redirect back to the chat page
@@ -43,19 +45,21 @@ export async function POST(req: NextRequest, { params }: Params) {
 }
 
 export async function DELETE(_req: NextRequest, { params }: Params) {
+  // Next.js App Router params must be awaited
+  const { messageId } = await params;
   const session = await getServerSession(authOptions);
   if (!session?.user?.id) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
 
-  const message = await prisma.message.findUnique({ where: { id: params.messageId } });
+  const message = await prisma.message.findUnique({ where: { id: messageId } });
   if (!message || message.senderId !== session.user.id) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
 
   // remove any emoji reactions for this message to avoid FK constraint errors
-  await prisma.messageReaction.deleteMany({ where: { messageId: params.messageId } });
+  await prisma.messageReaction.deleteMany({ where: { messageId } });
 
-  await prisma.message.delete({ where: { id: params.messageId } });
+  await prisma.message.delete({ where: { id: messageId } });
   return NextResponse.json({ success: true });
 }

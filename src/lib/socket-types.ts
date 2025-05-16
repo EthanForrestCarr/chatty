@@ -13,6 +13,7 @@ export interface ChatMessage {
 export type MessageEnvelope = { message: ChatMessage };
 
 export interface ClientToServerEvents {
+  deleteMessage: (messageId: string) => void;
   join: (chatId: string, user: ChatUser) => void;
   leave: (chatId: string, user: ChatUser) => void;
   typing: (chatId: string, user: ChatUser) => void;
@@ -21,6 +22,7 @@ export interface ClientToServerEvents {
 }
 
 export interface ServerToClientEvents {
+  deleteMessage: (messageId: string) => void;
   userJoined: (user: ChatUser) => void;
   userLeft: (user: ChatUser) => void;
   presence: (users: ChatUser[]) => void;

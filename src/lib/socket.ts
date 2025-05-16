@@ -17,6 +17,12 @@ export async function initSocket() {
       ServerToClientEvents,
       ClientToServerEvents
     >;
+    socket.on('connect', () => {
+      console.log('🟢 client socket connected:', socket?.id);
+    });
+    socket.on('disconnect', (reason) => {
+      console.log('🔴 client socket disconnected:', reason);
+    });
   }
   return socket;
 }

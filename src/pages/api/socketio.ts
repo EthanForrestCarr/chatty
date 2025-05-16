@@ -21,6 +21,7 @@ export default function SocketHandler(_req: NextApiRequest, res: NextApiResponse
       console.log('🔌 socket connected:', socket.id);
 
       socket.on('join', (chatId, user) => {
+        console.log('🔵 socket', socket.id, 'user', user.username, 'joining room', chatId);
         socket.join(chatId);
         socket.data.user = user;
 
@@ -89,6 +90,26 @@ export default function SocketHandler(_req: NextApiRequest, res: NextApiResponse
         const { id, messageId: mId, emoji: e, user: u, message } = saved;
         // broadcast reaction to room
         io.to(message.chatId).emit('reaction', { id, messageId: mId, emoji: e, user: u });
+      });
+
+      // handle deleteMessage from client
+      socket.on('deleteMessage', async (messageId: string) => {
+        console.log('🔴 deleteMessage received for', messageId, 'from', socket.data.user);
+        const user = socket.data.user;
+        if (!user) return;
+        // find message and verify ownership
+        const msg = await prisma.message.findUnique({ where: { id: messageId } });
+        if (msg) console.log('💬 delete target chatId', msg.chatId);
+        if (!msg || msg.senderId !== user.id) return;
+        // cascade-delete reactions
+        await prisma.messageReaction.deleteMany({ where: { messageId } });
+        // delete the message
+        await prisma.message.delete({ where: { id: messageId } });
+        console.log('🔔 broadcasting deleteMessage to room', msg.chatId);
+        // broadcast deletion to all clients in chat room
+        io.to(msg.chatId).emit('deleteMessage', messageId);
+        // fallback: broadcast globally to all sockets
+        io.emit('deleteMessage', messageId);
       });
 
       socket.on('disconnecting', () => {

@@ -64,14 +64,20 @@ export default function RealtimeMessages({
 
     (async () => {
       socketInstance = await initSocket();
+      console.log('🔗 Socket connected on client with id:', socketInstance.id);
       socketInstance.emit('join', chatId, {
         id: currentUserId,
         username: currentUsername,
       });
+      console.log('📣 Emitted join for chat', chatId);
 
       unsubscribeFn = subscribeToNewMessages((payload: Message | MessageEnvelope) => {
         const m = 'message' in payload ? payload.message : payload;
         setMessages((prev) => uniqById([...prev, m]));
+      });
+
+      socketInstance.on('presence', (users) => {
+        console.log('👥 Presence update:', users);
       });
 
       socketInstance.on('typing', (user) => {
@@ -104,6 +110,10 @@ export default function RealtimeMessages({
           )
         );
       });
+      socketInstance.on('deleteMessage', (messageId: string) => {
+        console.log('💥 Received deleteMessage event in client for', messageId);
+        setMessages((prev) => prev.filter((m) => m.id !== messageId));
+      });
     })().catch((err) => console.error('socket setup failed:', err));
 
     return () => {
@@ -116,6 +126,7 @@ export default function RealtimeMessages({
         socketInstance.off('userJoined');
         socketInstance.off('userLeft');
         socketInstance.off('reaction');
+        socketInstance.off('deleteMessage');
         unsubscribeFn();
       }
     };

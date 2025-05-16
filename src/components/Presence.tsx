@@ -1,4 +1,3 @@
-// filepath: src/components/Presence.tsx
 'use client';
 
 import React from 'react';
