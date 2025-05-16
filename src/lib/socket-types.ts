@@ -13,6 +13,7 @@ export interface ChatMessage {
 export type MessageEnvelope = { message: ChatMessage };
 
 export interface ClientToServerEvents {
+  undoDeleteMessage: (messageId: string) => void;
   deleteMessage: (messageId: string) => void;
   join: (chatId: string, user: ChatUser) => void;
   leave: (chatId: string, user: ChatUser) => void;
@@ -22,6 +23,9 @@ export interface ClientToServerEvents {
 }
 
 export interface ServerToClientEvents {
+  messagePendingDeletion: (messageId: string) => void;
+  messageUndoDelete: (messageId: string) => void;
+  messageRemoved: (messageId: string) => void;
   deleteMessage: (messageId: string) => void;
   userJoined: (user: ChatUser) => void;
   userLeft: (user: ChatUser) => void;

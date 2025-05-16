@@ -16,6 +16,8 @@ export default function SocketHandler(_req: NextApiRequest, res: NextApiResponse
     server.io = io;
 
     const presenceMap = new Map<string, Map<string, string>>();
+    // track pending deletions: messageId -> {timeout, chatId}
+    const pendingDeletions = new Map<string, { timeout: NodeJS.Timeout; chatId: string }>();
 
     io.on('connection', (socket: IOSocket<ClientToServerEvents, ServerToClientEvents>) => {
       console.log('🔌 socket connected:', socket.id);
@@ -101,15 +103,28 @@ export default function SocketHandler(_req: NextApiRequest, res: NextApiResponse
         const msg = await prisma.message.findUnique({ where: { id: messageId } });
         if (msg) console.log('💬 delete target chatId', msg.chatId);
         if (!msg || msg.senderId !== user.id) return;
-        // cascade-delete reactions
-        await prisma.messageReaction.deleteMany({ where: { messageId } });
-        // delete the message
-        await prisma.message.delete({ where: { id: messageId } });
-        console.log('🔔 broadcasting deleteMessage to room', msg.chatId);
-        // broadcast deletion to all clients in chat room
-        io.to(msg.chatId).emit('deleteMessage', messageId);
-        // fallback: broadcast globally to all sockets
-        io.emit('deleteMessage', messageId);
+        const chatId = msg.chatId;
+
+        // notify clients that deletion is pending
+        io.to(chatId).emit('messagePendingDeletion', messageId);
+        // schedule actual deletion after 30s
+        const timeout = setTimeout(async () => {
+          // perform DB delete
+          await prisma.messageReaction.deleteMany({ where: { messageId } });
+          await prisma.message.delete({ where: { id: messageId } });
+          io.to(chatId).emit('messageRemoved', messageId);
+          pendingDeletions.delete(messageId);
+        }, 30_000);
+        pendingDeletions.set(messageId, { timeout, chatId });
+      });
+
+      // handle undo delete within grace period
+      socket.on('undoDeleteMessage', async (messageId: string) => {
+        const pending = pendingDeletions.get(messageId);
+        if (!pending) return;
+        clearTimeout(pending.timeout);
+        pendingDeletions.delete(messageId);
+        io.to(pending.chatId).emit('messageUndoDelete', messageId);
       });
 
       socket.on('disconnecting', () => {

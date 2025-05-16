@@ -31,6 +31,8 @@ export default function RealtimeMessages({
   currentUsername: string;
 }) {
   const [messages, setMessages] = useState<Message[]>([]);
+  // track messages pending deletion (grace period)
+  const [pendingDeletions, setPendingDeletions] = useState<Set<string>>(new Set());
   // banner text for join/leave notifications
   const [banner, setBanner] = useState<string | null>(null);
   const scrollAnchor = useRef<HTMLDivElement>(null);
@@ -110,9 +112,26 @@ export default function RealtimeMessages({
           )
         );
       });
-      socketInstance.on('deleteMessage', (messageId: string) => {
-        console.log('💥 Received deleteMessage event in client for', messageId);
-        setMessages((prev) => prev.filter((m) => m.id !== messageId));
+      // mark deletion as pending (start grace period)
+      socketInstance.on('messagePendingDeletion', (id: string) => {
+        setPendingDeletions((prev) => new Set(prev).add(id));
+      });
+      // undo deletion within grace period
+      socketInstance.on('messageUndoDelete', (id: string) => {
+        setPendingDeletions((prev) => {
+          const copy = new Set(prev);
+          copy.delete(id);
+          return copy;
+        });
+      });
+      // finalize removal after grace period
+      socketInstance.on('messageRemoved', (id: string) => {
+        setPendingDeletions((prev) => {
+          const copy = new Set(prev);
+          copy.delete(id);
+          return copy;
+        });
+        setMessages((prev) => prev.filter((m) => m.id !== id));
       });
     })().catch((err) => console.error('socket setup failed:', err));
 
@@ -126,7 +145,9 @@ export default function RealtimeMessages({
         socketInstance.off('userJoined');
         socketInstance.off('userLeft');
         socketInstance.off('reaction');
-        socketInstance.off('deleteMessage');
+        socketInstance.off('messagePendingDeletion');
+        socketInstance.off('messageUndoDelete');
+        socketInstance.off('messageRemoved');
         unsubscribeFn();
       }
     };
@@ -154,7 +175,11 @@ export default function RealtimeMessages({
           msg={msg}
           currentUserId={currentUserId}
           currentUsername={currentUsername}
-          onDelete={(id) => setMessages((prev) => prev.filter((m) => m.id !== id))}
+          isPending={pendingDeletions.has(msg.id)}
+          onUndo={async (id) => {
+            const socket = await initSocket();
+            socket.emit('undoDeleteMessage', id);
+          }}
         />
       ))}
       <TypingIndicator typingUsers={typingUsers} />

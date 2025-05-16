@@ -9,20 +9,36 @@ interface MessageBubbleProps {
   msg: Message;
   currentUserId: string;
   currentUsername: string;
-  onDelete?: (id: string) => void;
+  isPending?: boolean;
+  onUndo?: (id: string) => void;
 }
 
 const MessageBubble: React.FC<MessageBubbleProps> = ({
   msg,
   currentUserId,
   currentUsername,
-  onDelete,
+  isPending,
+  onUndo,
 }) => {
   const isOwn = msg.sender.id === currentUserId;
+  // always initialize ref and scroll effect
   const ref = useRef<HTMLDivElement>(null);
   useEffect(() => {
     ref.current?.scrollIntoView({ behavior: 'smooth' });
   }, []);
+  // if pending deletion, show undo option
+  if (isPending) {
+    return (
+      <div className="max-w-[70%] p-3 rounded-2xl break-words opacity-50 italic bg-yellow-100 text-black">
+        <p className="text-sm mb-1">Message deleted</p>
+        {isOwn && onUndo && (
+          <button onClick={() => onUndo(msg.id)} className="text-xs text-blue-500 hover:underline">
+            Undo
+          </button>
+        )}
+      </div>
+    );
+  }
 
   // group reactions by emoji
   const reactionCounts =
@@ -52,7 +68,7 @@ const MessageBubble: React.FC<MessageBubbleProps> = ({
       console.log('🚀 Emitting deleteMessage for', msg.id);
       const socket = await initSocket();
       socket.emit('deleteMessage', msg.id);
-      onDelete?.(msg.id);
+      // deletion handled via socket events
     } catch (err) {
       console.error('Failed to emit deleteMessage:', err);
     }
@@ -78,7 +94,7 @@ const MessageBubble: React.FC<MessageBubbleProps> = ({
           </span>
         ))}
         <ReactionPicker onSelect={handleReaction} />
-        {isOwn && onDelete && (
+        {!isPending && isOwn && (
           <button onClick={handleDelete} className="ml-2 text-xs text-red-500 hover:underline">
             Delete
           </button>
