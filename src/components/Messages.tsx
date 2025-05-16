@@ -133,6 +133,12 @@ export default function RealtimeMessages({
         });
         setMessages((prev) => prev.filter((m) => m.id !== id));
       });
+      // handle message edits in real-time
+      socketInstance.on('messageEdited', ({ messageId, newContent, editedAt }) => {
+        setMessages((prev) =>
+          prev.map((m) => (m.id === messageId ? { ...m, content: newContent, editedAt } : m))
+        );
+      });
     })().catch((err) => console.error('socket setup failed:', err));
 
     return () => {
@@ -148,6 +154,7 @@ export default function RealtimeMessages({
         socketInstance.off('messagePendingDeletion');
         socketInstance.off('messageUndoDelete');
         socketInstance.off('messageRemoved');
+        socketInstance.off('messageEdited');
         unsubscribeFn();
       }
     };
