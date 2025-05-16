@@ -127,6 +127,29 @@ export default function SocketHandler(_req: NextApiRequest, res: NextApiResponse
         io.to(pending.chatId).emit('messageUndoDelete', messageId);
       });
 
+      // handle editMessage from client
+      socket.on('editMessage', async ({ messageId, newContent }) => {
+        const user = socket.data.user;
+        if (!user) return;
+        // fetch original message and enforce edit window (10 minutes)
+        const msg = await prisma.message.findUnique({ where: { id: messageId } });
+        if (!msg || msg.senderId !== user.id) return;
+        const tenMinutes = 10 * 60 * 1000;
+        if (Date.now() - msg.createdAt.getTime() > tenMinutes) return;
+        // apply update with editedAt timestamp
+        const editedAt = new Date();
+        await prisma.message.update({
+          where: { id: messageId },
+          data: { content: newContent, editedAt },
+        });
+        // broadcast the edited content to room
+        io.to(msg.chatId).emit('messageEdited', {
+          messageId,
+          newContent,
+          editedAt: editedAt.toISOString(),
+        });
+      });
+
       socket.on('disconnecting', () => {
         const user = socket.data.user as ChatUser | undefined;
         if (user) {

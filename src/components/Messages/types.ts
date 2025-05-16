@@ -9,6 +9,7 @@ export interface Reaction {
 export interface Message {
   id: string;
   content: string;
+  editedAt?: string;
   createdAt: string;
   sender: { id: string; username: string };
   reactions?: Reaction[];

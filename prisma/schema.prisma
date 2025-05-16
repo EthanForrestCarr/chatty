@@ -60,6 +60,7 @@ model Message {
   senderId  String
   chatId    String
   createdAt DateTime @default(now())
+  editedAt  DateTime?
 
   sender    User              @relation(fields: [senderId], references: [id])
   chat      Chat              @relation(fields: [chatId], references: [id])

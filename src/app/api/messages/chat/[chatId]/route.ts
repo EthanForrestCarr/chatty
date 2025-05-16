@@ -51,6 +51,8 @@ export async function GET(_req: NextRequest, { params }: { params: { chatId: str
     id: m.id,
     content: m.content,
     createdAt: m.createdAt.toISOString(),
+    // use cast to access optional editedAt field
+    editedAt: m.editedAt?.toISOString(),
     sender: m.sender,
     chatId: m.chatId,
     reactions: m.reactions.map((r) => ({

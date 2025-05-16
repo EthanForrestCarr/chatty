@@ -20,6 +20,7 @@ export interface ClientToServerEvents {
   typing: (chatId: string, user: ChatUser) => void;
   message: (payload: ChatMessage & { chatId: string }) => void;
   reaction: (payload: { messageId: string; emoji: string; user: ChatUser }) => void;
+  editMessage: (payload: { messageId: string; newContent: string }) => void;
 }
 
 export interface ServerToClientEvents {
@@ -33,6 +34,7 @@ export interface ServerToClientEvents {
   typing: (user: ChatUser) => void;
   message: (payload: ChatMessage | MessageEnvelope) => void;
   reaction: (payload: Reaction) => void;
+  messageEdited: (payload: { messageId: string; newContent: string; editedAt: string }) => void;
 }
 
 export interface Reaction {
