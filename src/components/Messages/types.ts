@@ -1,3 +1,5 @@
+import { AttachmentMeta } from '@/lib/socket-types';
+
 // Type definitions for the Messages components
 export interface Reaction {
   id: string;
@@ -13,6 +15,7 @@ export interface Message {
   createdAt: string;
   sender: { id: string; username: string };
   reactions?: Reaction[];
+  attachments?: AttachmentMeta[];
 }
 
 export interface MessageEnvelope {

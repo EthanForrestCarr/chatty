@@ -142,6 +142,21 @@ const MessageBubble: React.FC<MessageBubbleProps> = ({
       ) : (
         <p className="whitespace-pre-wrap">{msg.content}</p>
       )}
+      {msg.attachments && msg.attachments.length > 0 && (
+        <div className="mt-2 space-y-2">
+          {msg.attachments!.map((att) => (
+            <div key={att.key}>
+              {att.contentType.startsWith('image/') ? (
+                <img src={att.url} alt={att.filename} className="max-w-full rounded" />
+              ) : (
+                <a href={att.url} download={att.filename} className="text-blue-200 hover:underline">
+                  📎 {att.filename}
+                </a>
+              )}
+            </div>
+          ))}
+        </div>
+      )}
       <p className="text-xs text-right mt-1 text-white/70">
         {new Date(msg.createdAt).toLocaleTimeString()}
         {msg.editedAt && <span className="italic ml-2">(edited)</span>}
