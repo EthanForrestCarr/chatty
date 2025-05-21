@@ -82,6 +82,17 @@ Jest will run any available API route or utility tests.
 
 ---
 
+### 6. File Uploads API
+
+Add a new endpoint to handle file uploads. It accepts multipart form-data under the `files` field, streams each file to S3, and returns a JSON list of `{ key, url }` objects:
+
+```ts
+// src/app/api/uploads/route.ts
+export async function POST(req: Request) {
+  /* ... */
+}
+```
+
 ## 🧾 NPM Scripts
 
 | Script          | Description                      |

@@ -11,6 +11,7 @@ export default function ChatInput({
   currentUser: { id: string; username: string };
 }) {
   const [content, setContent] = useState('');
+  const [files, setFiles] = useState<File[]>([]);
   const typingTimeout = useRef<NodeJS.Timeout | null>(null);
 
   const sendTyping = async () => {
@@ -30,9 +31,22 @@ export default function ChatInput({
     typingTimeout.current = setTimeout(sendTyping, 2000);
   };
 
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files) setFiles(Array.from(e.target.files));
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!content.trim()) return;
+    if (!content.trim() && files.length === 0) return;
+
+    let attachments: Array<{ key: string; url: string }> = [];
+    if (files.length) {
+      const formData = new FormData();
+      files.forEach((file) => formData.append('files', file));
+      const res = await fetch('/api/uploads', { method: 'POST', body: formData });
+      const data = await res.json();
+      attachments = data.attachments;
+    }
 
     try {
       const socket = await initSocket();
@@ -42,16 +56,19 @@ export default function ChatInput({
         content,
         sender: currentUser,
         createdAt: new Date().toISOString(),
+        attachments,
       };
       socket.emit('message', msg);
       setContent('');
+      setFiles([]);
     } catch (err) {
       console.error('Failed to send message:', err);
     }
   };
 
   return (
-    <form onSubmit={handleSubmit} className="flex gap-2 mt-4">
+    <form onSubmit={handleSubmit} className="flex flex-col gap-2 mt-4">
+      <input type="file" multiple onChange={handleFileChange} className="border p-1 rounded" />
       <textarea
         value={content}
         onChange={handleChange}
