@@ -100,8 +100,7 @@ Jest will run any available API route or utility tests.
 
 ### UX / UI
 
-- ✅ Edit messages & undo delete grace period
-- ✅ Attachment support (S3 or custom backend)
+- ✅ Attachment support (cost-free during dev; local or free-tier only)
 - ✅ Fully responsive mobile UI
 
 ### Features & Scaling
