@@ -43,6 +43,7 @@ export async function GET(_req: NextRequest, { params }: { params: { chatId: str
       reactions: {
         include: { user: { select: { id: true, username: true } } },
       },
+      attachments: true,
     },
     orderBy: { createdAt: 'asc' },
   });
@@ -60,6 +61,13 @@ export async function GET(_req: NextRequest, { params }: { params: { chatId: str
       emoji: r.emoji,
       user: r.user,
       messageId: r.messageId,
+    })),
+    attachments: m.attachments.map((a) => ({
+      key: a.key,
+      url: a.url,
+      filename: a.filename,
+      contentType: a.contentType,
+      size: a.size,
     })),
   }));
   return NextResponse.json(output);

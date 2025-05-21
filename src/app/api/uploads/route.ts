@@ -8,7 +8,13 @@ export async function POST(request: Request) {
   try {
     const formData = await request.formData();
     const files = formData.getAll('files');
-    const results: Array<{ key: string; url: string }> = [];
+    const results: Array<{
+      key: string;
+      url: string;
+      filename: string;
+      contentType: string;
+      size: number;
+    }> = [];
 
     for (const fileEntry of files) {
       if (!(fileEntry instanceof File)) continue;
@@ -17,7 +23,14 @@ export async function POST(request: Request) {
       // prefix timestamp to avoid naming collisions
       const key = `${Date.now()}-${fileEntry.name}`;
       const url = await uploadFile(buffer, key, fileEntry.type);
-      results.push({ key, url });
+      // include metadata
+      results.push({
+        key,
+        url,
+        filename: fileEntry.name,
+        contentType: fileEntry.type,
+        size: fileEntry.size,
+      });
     }
 
     return NextResponse.json({ attachments: results });

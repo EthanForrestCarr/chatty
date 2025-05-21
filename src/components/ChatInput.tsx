@@ -2,6 +2,7 @@
 
 import { useState, useRef } from 'react';
 import { initSocket } from '@/lib/socket';
+import type { AttachmentMeta } from '@/lib/socket-types';
 
 export default function ChatInput({
   chatId,
@@ -39,12 +40,12 @@ export default function ChatInput({
     e.preventDefault();
     if (!content.trim() && files.length === 0) return;
 
-    let attachments: Array<{ key: string; url: string }> = [];
+    let attachments: AttachmentMeta[] = [];
     if (files.length) {
       const formData = new FormData();
       files.forEach((file) => formData.append('files', file));
       const res = await fetch('/api/uploads', { method: 'POST', body: formData });
-      const data = await res.json();
+      const data = (await res.json()) as { attachments: AttachmentMeta[] };
       attachments = data.attachments;
     }
 

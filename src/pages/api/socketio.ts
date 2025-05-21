@@ -60,22 +60,43 @@ export default function SocketHandler(_req: NextApiRequest, res: NextApiResponse
       });
 
       socket.on('message', async (msg) => {
-        const { chatId, content, sender } = msg;
-        const saved = await prisma.message.create({
-          data: { content, chatId, senderId: sender.id },
-          include: { sender: { select: { id: true, username: true } } },
-        });
-
-        // convert Date → string so it matches your ChatMessage type
-        const outgoing = {
-          id: saved.id,
-          content: saved.content,
-          sender: saved.sender,
-          createdAt: saved.createdAt.toISOString(),
-          chatId,
-        };
-
-        io.to(chatId).emit('message', outgoing);
+        try {
+          const { content, sender, attachments = [] } = msg;
+          // chatId comes from the client payload; assert its existence
+          const chatId = msg.chatId!;
+          if (!chatId) {
+            console.error('❌ Missing chatId in message payload');
+            return;
+          }
+          // create message record
+          const saved = await prisma.message.create({
+            data: { content, chatId, senderId: sender.id },
+          });
+          // persist attachments if any
+          if (attachments.length) {
+            await prisma.attachment.createMany({
+              data: attachments.map((att) => ({
+                key: att.key,
+                url: att.url,
+                filename: att.filename,
+                contentType: att.contentType,
+                size: att.size,
+                messageId: saved.id,
+              })),
+            });
+          }
+          // emit message with attachments
+          io.to(chatId).emit('message', {
+            id: saved.id,
+            content: saved.content,
+            sender,
+            createdAt: saved.createdAt.toISOString(),
+            chatId,
+            attachments,
+          });
+        } catch (error) {
+          console.error('❌ Socket message handler error:', error);
+        }
       });
 
       socket.on('reaction', async ({ messageId, emoji, user }) => {
