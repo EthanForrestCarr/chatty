@@ -23,24 +23,29 @@ export async function uploadFile(
   key: string,
   contentType: string
 ): Promise<string> {
-  const bucket = process.env.AWS_S3_BUCKET!;
+  try {
+    const bucket = process.env.AWS_S3_BUCKET!;
 
-  // Upload the object to S3
-  await s3Client.send(
-    new PutObjectCommand({
-      Bucket: bucket,
-      Key: key,
-      Body: buffer,
-      ContentType: contentType,
-    })
-  );
+    // Upload the object to S3
+    await s3Client.send(
+      new PutObjectCommand({
+        Bucket: bucket,
+        Key: key,
+        Body: buffer,
+        ContentType: contentType,
+      })
+    );
 
-  // Generate a presigned URL valid for 1 hour
-  const url = await getSignedUrl(s3Client, new GetObjectCommand({ Bucket: bucket, Key: key }), {
-    expiresIn: 3600,
-  });
+    // Generate a presigned URL valid for 1 hour
+    const url = await getSignedUrl(s3Client, new GetObjectCommand({ Bucket: bucket, Key: key }), {
+      expiresIn: 3600,
+    });
 
-  return url;
+    return url;
+  } catch (error) {
+    console.error('❌ S3 uploadFile error:', error);
+    throw error;
+  }
 }
 
 /**
@@ -48,6 +53,11 @@ export async function uploadFile(
  * @param key - Object key (path/filename) to delete
  */
 export async function deleteFile(key: string): Promise<void> {
-  const bucket = process.env.AWS_S3_BUCKET!;
-  await s3Client.send(new DeleteObjectCommand({ Bucket: bucket, Key: key }));
+  try {
+    const bucket = process.env.AWS_S3_BUCKET!;
+    await s3Client.send(new DeleteObjectCommand({ Bucket: bucket, Key: key }));
+  } catch (error) {
+    console.error('❌ S3 deleteFile error:', error);
+    throw error;
+  }
 }

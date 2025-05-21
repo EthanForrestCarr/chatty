@@ -65,6 +65,7 @@ model Message {
   sender    User              @relation(fields: [senderId], references: [id])
   chat      Chat              @relation(fields: [chatId], references: [id])
   reactions MessageReaction[]
+  attachments Attachment[]   // one-to-many relation to attachments
 }
 
 model MessageReaction {
@@ -88,4 +89,17 @@ model ChatUser {
   lastReadAt DateTime?
 
   @@id([chatId, userId])
+}
+
+// Stores file attachment metadata for messages
+model Attachment {
+  id          String   @id @default(cuid())
+  key         String   @unique
+  url         String
+  filename    String
+  contentType String
+  size        Int
+  message     Message  @relation(fields: [messageId], references: [id])
+  messageId   String
+  uploadedAt  DateTime @default(now())
 }
