@@ -61,7 +61,7 @@ export default function SocketHandler(_req: NextApiRequest, res: NextApiResponse
 
       socket.on('message', async (msg) => {
         try {
-          const { content, sender, attachments = [] } = msg;
+          const { content, sender, attachments = [], nonce } = msg;
           // chatId comes from the client payload; assert its existence
           const chatId = msg.chatId!;
           if (!chatId) {
@@ -70,7 +70,7 @@ export default function SocketHandler(_req: NextApiRequest, res: NextApiResponse
           }
           // create message record
           const saved = await prisma.message.create({
-            data: { content, chatId, senderId: sender.id },
+            data: { content, nonce, chatId, senderId: sender.id },
           });
           // persist attachments if any
           if (attachments.length) {
@@ -89,6 +89,7 @@ export default function SocketHandler(_req: NextApiRequest, res: NextApiResponse
           io.to(chatId).emit('message', {
             id: saved.id,
             content: saved.content,
+            nonce: saved.nonce ?? undefined, // send undefined instead of null
             sender,
             createdAt: saved.createdAt.toISOString(),
             chatId,

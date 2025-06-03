@@ -17,6 +17,7 @@ export interface ChatUser {
 export interface ChatMessage {
   id: string;
   content: string;
+  nonce?: string; // optional nonce for encrypted messages
   createdAt: string;
   sender: ChatUser;
   chatId?: string;

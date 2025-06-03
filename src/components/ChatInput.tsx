@@ -3,13 +3,16 @@
 import { useState, useRef } from 'react';
 import { initSocket } from '@/lib/socket';
 import type { AttachmentMeta } from '@/lib/socket-types';
+import { initSodium, deriveSharedKey, encrypt } from '@/lib/crypto';
 
 export default function ChatInput({
   chatId,
   currentUser,
+  recipientId,
 }: {
   chatId: string;
   currentUser: { id: string; username: string };
+  recipientId: string;
 }) {
   const [content, setContent] = useState('');
   const [files, setFiles] = useState<File[]>([]);
@@ -50,11 +53,25 @@ export default function ChatInput({
     }
 
     try {
+      // encrypt content if present
+      let encryptedContent = content;
+      let nonce: string | undefined;
+      if (content.trim()) {
+        await initSodium();
+        const privateKey = localStorage.getItem('privateKey');
+        const res = await fetch(`/api/users/${recipientId}/publicKey`);
+        const { publicKey } = await res.json();
+        const sharedKey = await deriveSharedKey(privateKey!, publicKey);
+        const { cipherText, nonce: n } = await encrypt(sharedKey, content);
+        encryptedContent = cipherText;
+        nonce = n;
+      }
       const socket = await initSocket();
       const msg = {
         chatId,
         id: crypto.randomUUID(),
-        content,
+        content: encryptedContent,
+        nonce,
         sender: currentUser,
         createdAt: new Date().toISOString(),
         attachments,

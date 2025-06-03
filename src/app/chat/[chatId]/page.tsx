@@ -54,7 +54,11 @@ export default async function ChatPage({ params }: { params: { chatId: string } 
       <Presence chatId={chatId} currentUserId={userId} currentUsername={username} />
       <RealtimeMessages chatId={chatId} currentUserId={userId} currentUsername={username} />
 
-      <ChatInput chatId={chatId} currentUser={{ id: userId, username }} />
+      <ChatInput
+        chatId={chatId}
+        currentUser={{ id: userId, username }}
+        recipientId={partnerUser?.id ?? ''}
+      />
     </main>
   );
 }

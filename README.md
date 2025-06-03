@@ -111,7 +111,6 @@ export async function POST(req: Request) {
 
 ### UX / UI
 
-- ✅ Attachment support (cost-free during dev; local or free-tier only)
 - ✅ Fully responsive mobile UI
 
 ### Features & Scaling
@@ -130,7 +129,6 @@ export async function POST(req: Request) {
 ### Long-Term Roadmap
 
 - 🔐 End-to-end encryption (E2EE)
-- 🎥 Voice & video calling (WebRTC)
 - 🧠 AI-powered features (summaries, moderation, etc.)
 
 ---

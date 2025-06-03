@@ -48,27 +48,30 @@ export async function GET(_req: NextRequest, { params }: { params: { chatId: str
     orderBy: { createdAt: 'asc' },
   });
   // serialize dates and shape output
-  const output = raw.map((m) => ({
-    id: m.id,
-    content: m.content,
-    createdAt: m.createdAt.toISOString(),
-    // use cast to access optional editedAt field
-    editedAt: m.editedAt?.toISOString(),
-    sender: m.sender,
-    chatId: m.chatId,
-    reactions: m.reactions.map((r) => ({
-      id: r.id,
-      emoji: r.emoji,
-      user: r.user,
-      messageId: r.messageId,
-    })),
-    attachments: m.attachments.map((a) => ({
-      key: a.key,
-      url: a.url,
-      filename: a.filename,
-      contentType: a.contentType,
-      size: a.size,
-    })),
-  }));
+  const output = raw.map((m) => {
+    const msg = m; // cast to any to access optional nonce
+    return {
+      id: msg.id,
+      content: msg.content,
+      nonce: msg.nonce, // include nonce if present
+      createdAt: msg.createdAt.toISOString(),
+      editedAt: msg.editedAt?.toISOString(),
+      sender: msg.sender,
+      chatId: msg.chatId,
+      reactions: msg.reactions.map((r) => ({
+        id: r.id,
+        emoji: r.emoji,
+        user: r.user,
+        messageId: r.messageId,
+      })),
+      attachments: msg.attachments.map((a) => ({
+        key: a.key,
+        url: a.url,
+        filename: a.filename,
+        contentType: a.contentType,
+        size: a.size,
+      })),
+    };
+  });
   return NextResponse.json(output);
 }

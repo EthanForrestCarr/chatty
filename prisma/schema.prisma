@@ -19,6 +19,7 @@ model User {
   messages         Message[]
   chatUsers        ChatUser[]
   messageReactions MessageReaction[]
+  publicKey        String?           // E2EE public key (base64), optional
 }
 
 model Session {
@@ -57,6 +58,7 @@ model Chat {
 model Message {
   id        String   @id @default(cuid())
   content   String
+  nonce     String?   // optional nonce for encrypted messages
   senderId  String
   chatId    String
   createdAt DateTime @default(now())
