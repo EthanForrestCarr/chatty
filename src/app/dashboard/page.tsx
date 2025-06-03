@@ -1,8 +1,8 @@
-import { getServerSession } from "next-auth";
-import { authOptions } from "../api/auth/[...nextauth]/route";
-import { prisma } from "@/lib/db";
-import Link from "next/link";
-import UserSearchInput from "@/components/UserSearchInput";
+import { getServerSession } from 'next-auth';
+import { authOptions } from '../api/auth/[...nextauth]/route';
+import { prisma } from '@/lib/db';
+import Link from 'next/link';
+import UserSearchInput from '@/components/UserSearchInput';
 
 type UserPreview = { id: string; username: string };
 
@@ -46,17 +46,14 @@ export default async function DashboardPage() {
         },
       },
     },
-    orderBy: { chat: { createdAt: "desc" } },
+    orderBy: { chat: { createdAt: 'desc' } },
   });
 
   // Build a simple array with unread counts
   const items: ChatListItem[] = rows.map((row: ChatRow) => {
     const { chat, lastReadAt } = row;
     const partnerUsername =
-      chat.chatUsers
-        .map((cu) => cu.user)
-        .find((u) => u.id !== userId)
-        ?.username ?? "Unknown";
+      chat.chatUsers.map((cu) => cu.user).find((u) => u.id !== userId)?.username ?? 'Unknown';
 
     const unreadCount = chat.messages.filter(
       (m: { createdAt: Date }) => !lastReadAt || m.createdAt > lastReadAt
@@ -74,10 +71,7 @@ export default async function DashboardPage() {
       <h1 className="text-2xl font-bold mb-4">Your Chats</h1>
       <ul className="space-y-2">
         {items.map(({ chatId, partnerUsername, unreadCount }) => (
-          <li
-            key={chatId}
-            className="flex justify-between items-center border p-4 rounded"
-          >
+          <li key={chatId} className="flex justify-between items-center border p-4 rounded">
             <Link href={`/chat/${chatId}`} className="hover:underline">
               Chat with <strong>{partnerUsername}</strong>
             </Link>
@@ -92,6 +86,19 @@ export default async function DashboardPage() {
 
       <h2 className="text-xl font-semibold mt-6 mb-2">Start New Chat</h2>
       <UserSearchInput />
+
+      <h2 className="text-xl font-semibold mt-8 mb-2">E2EE Key Management</h2>
+      <div className="flex gap-4 mb-6">
+        <Link href="/backup" className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700">
+          Backup Keys
+        </Link>
+        <Link
+          href="/restore"
+          className="bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700"
+        >
+          Restore Keys
+        </Link>
+      </div>
     </main>
   );
 }

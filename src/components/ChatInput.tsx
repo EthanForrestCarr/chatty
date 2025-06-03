@@ -58,8 +58,9 @@ export default function ChatInput({
       let nonce: string | undefined;
       if (content.trim()) {
         await initSodium();
-        // get our private key
-        const privateKey = localStorage.getItem('privateKey');
+        // get our private key for this user
+        const storageKey = `privateKey:${currentUser.id}`;
+        const privateKey = localStorage.getItem(storageKey);
         if (!privateKey) {
           throw new Error('Missing private E2EE key; please reload to initialize encryption');
         }

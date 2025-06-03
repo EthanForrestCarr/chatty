@@ -33,7 +33,8 @@ const MessageBubble: React.FC<MessageBubbleProps> = ({
     async function doDecrypt() {
       if (msg.nonce) {
         await initSodium();
-        const privateKey = localStorage.getItem('privateKey');
+        const storageKey = `privateKey:${currentUserId}`;
+        const privateKey = localStorage.getItem(storageKey);
         if (!privateKey) return;
         // determine which user's public key to fetch
         const otherId = isOwn ? recipientId : msg.sender.id;
@@ -114,9 +115,9 @@ const MessageBubble: React.FC<MessageBubbleProps> = ({
   // handle save/cancel
   const handleSaveEdit = async () => {
     try {
-      // encrypt the updated content
       await initSodium();
-      const privateKey = localStorage.getItem('privateKey');
+      const storageKey = `privateKey:${currentUserId}`;
+      const privateKey = localStorage.getItem(storageKey);
       if (!privateKey) throw new Error('Missing private E2EE key');
       const otherId = isOwn ? recipientId : msg.sender.id;
       const res = await fetch(`/api/users/${otherId}/publicKey`);

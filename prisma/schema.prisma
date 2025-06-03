@@ -20,6 +20,7 @@ model User {
   chatUsers        ChatUser[]
   messageReactions MessageReaction[]
   publicKey        String?           // E2EE public key (base64), optional
+  encryptedBackup   String?          @db.Text
 }
 
 model Session {

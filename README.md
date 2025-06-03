@@ -128,7 +128,6 @@ export async function POST(req: Request) {
 
 ### Long-Term Roadmap
 
-- 🔐 End-to-end encryption (E2EE)
 - 🧠 AI-powered features (summaries, moderation, etc.)
 
 ---

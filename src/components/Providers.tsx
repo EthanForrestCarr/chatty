@@ -9,11 +9,21 @@ function E2EEInitializer() {
   useEffect(() => {
     if (status === 'authenticated' && session?.user?.id) {
       const userId = session.user.id;
-      const stored = localStorage.getItem('privateKey');
+      const storageKey = `privateKey:${userId}`;
+      let stored = localStorage.getItem(storageKey);
+      // migrate legacy global key
+      if (!stored) {
+        const legacy = localStorage.getItem('privateKey');
+        if (legacy) {
+          localStorage.setItem(storageKey, legacy);
+          localStorage.removeItem('privateKey');
+          stored = legacy;
+        }
+      }
       if (!stored) {
         initSodium().then(async () => {
           const { publicKey, privateKey } = await generateKeyPair();
-          localStorage.setItem('privateKey', privateKey);
+          localStorage.setItem(storageKey, privateKey);
           fetch(`/api/users/${userId}/publicKey`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
