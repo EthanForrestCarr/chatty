@@ -136,9 +136,9 @@ export default function RealtimeMessages({
         setMessages((prev) => prev.filter((m) => m.id !== id));
       });
       // handle message edits in real-time
-      socketInstance.on('messageEdited', ({ messageId, newContent, editedAt }) => {
+      socketInstance.on('messageEdited', ({ messageId, newContent, nonce, editedAt }) => {
         setMessages((prev) =>
-          prev.map((m) => (m.id === messageId ? { ...m, content: newContent, editedAt } : m))
+          prev.map((m) => (m.id === messageId ? { ...m, content: newContent, nonce, editedAt } : m))
         );
       });
     })().catch((err) => console.error('socket setup failed:', err));

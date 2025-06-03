@@ -3,7 +3,7 @@
 import React, { useEffect, useRef, useState } from 'react';
 import ReactionPicker from '@/components/ReactionPicker';
 import { initSocket } from '@/lib/socket';
-import { initSodium, deriveSharedKey, decrypt } from '@/lib/crypto';
+import { initSodium, deriveSharedKey, decrypt, encrypt } from '@/lib/crypto';
 import { Message } from './types';
 
 interface MessageBubbleProps {
@@ -50,6 +50,8 @@ const MessageBubble: React.FC<MessageBubbleProps> = ({
         const sharedKey = await deriveSharedKey(privateKey, publicKey);
         const plain = await decrypt(sharedKey, msg.content, msg.nonce);
         setDecryptedContent(plain);
+        // initialize edit draft to decrypted plaintext
+        setDraft(plain);
       }
     }
     doDecrypt().catch(console.error);
@@ -112,8 +114,19 @@ const MessageBubble: React.FC<MessageBubbleProps> = ({
   // handle save/cancel
   const handleSaveEdit = async () => {
     try {
+      // encrypt the updated content
+      await initSodium();
+      const privateKey = localStorage.getItem('privateKey');
+      if (!privateKey) throw new Error('Missing private E2EE key');
+      const otherId = isOwn ? recipientId : msg.sender.id;
+      const res = await fetch(`/api/users/${otherId}/publicKey`);
+      if (!res.ok) throw new Error('Failed to fetch public key for edit');
+      const { publicKey } = (await res.json()) as { publicKey?: string };
+      if (!publicKey) throw new Error('No public key for user ' + otherId);
+      const sharedKey = await deriveSharedKey(privateKey, publicKey);
+      const { cipherText, nonce: newNonce } = await encrypt(sharedKey, draft);
       const socket = await initSocket();
-      socket.emit('editMessage', { messageId: msg.id, newContent: draft });
+      socket.emit('editMessage', { messageId: msg.id, newContent: cipherText, nonce: newNonce });
     } catch (err) {
       console.error('Failed to emit editMessage:', err);
     }

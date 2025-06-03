@@ -150,24 +150,25 @@ export default function SocketHandler(_req: NextApiRequest, res: NextApiResponse
       });
 
       // handle editMessage from client
-      socket.on('editMessage', async ({ messageId, newContent }) => {
+      socket.on('editMessage', async ({ messageId, newContent, nonce }) => {
         const user = socket.data.user;
         if (!user) return;
         // fetch original message and enforce edit window (10 minutes)
-        const msg = await prisma.message.findUnique({ where: { id: messageId } });
-        if (!msg || msg.senderId !== user.id) return;
+        const msgRecord = await prisma.message.findUnique({ where: { id: messageId } });
+        if (!msgRecord || msgRecord.senderId !== user.id) return;
         const tenMinutes = 10 * 60 * 1000;
-        if (Date.now() - msg.createdAt.getTime() > tenMinutes) return;
+        if (Date.now() - msgRecord.createdAt.getTime() > tenMinutes) return;
         // apply update with editedAt timestamp
         const editedAt = new Date();
         await prisma.message.update({
           where: { id: messageId },
-          data: { content: newContent, editedAt },
+          data: { content: newContent, nonce, editedAt },
         });
-        // broadcast the edited content to room
-        io.to(msg.chatId).emit('messageEdited', {
+        // broadcast the edited content with new nonce
+        io.to(msgRecord.chatId).emit('messageEdited', {
           messageId,
           newContent,
+          nonce,
           editedAt: editedAt.toISOString(),
         });
       });
