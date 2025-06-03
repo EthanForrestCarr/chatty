@@ -58,10 +58,20 @@ export default function ChatInput({
       let nonce: string | undefined;
       if (content.trim()) {
         await initSodium();
+        // get our private key
         const privateKey = localStorage.getItem('privateKey');
-        const res = await fetch(`/api/users/${recipientId}/publicKey`);
-        const { publicKey } = await res.json();
-        const sharedKey = await deriveSharedKey(privateKey!, publicKey);
+        if (!privateKey) {
+          throw new Error('Missing private E2EE key; please reload to initialize encryption');
+        }
+        // fetch recipient's public key
+        const resPK = await fetch(`/api/users/${recipientId}/publicKey`);
+        if (!resPK.ok) throw new Error('Failed to fetch recipient public key');
+        const { publicKey } = (await resPK.json()) as { publicKey?: string };
+        if (!publicKey) {
+          throw new Error('Recipient has no public key published');
+        }
+        // derive shared secret and encrypt
+        const sharedKey = await deriveSharedKey(privateKey, publicKey);
         const { cipherText, nonce: n } = await encrypt(sharedKey, content);
         encryptedContent = cipherText;
         nonce = n;

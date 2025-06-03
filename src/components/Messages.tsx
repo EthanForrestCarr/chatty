@@ -25,10 +25,12 @@ export default function RealtimeMessages({
   chatId,
   currentUserId,
   currentUsername,
+  recipientId,
 }: {
   chatId: string;
   currentUserId: string;
   currentUsername: string;
+  recipientId: string;
 }) {
   const [messages, setMessages] = useState<Message[]>([]);
   // track messages pending deletion (grace period)
@@ -182,6 +184,7 @@ export default function RealtimeMessages({
           msg={msg}
           currentUserId={currentUserId}
           currentUsername={currentUsername}
+          recipientId={recipientId}
           isPending={pendingDeletions.has(msg.id)}
           onUndo={async (id) => {
             const socket = await initSocket();

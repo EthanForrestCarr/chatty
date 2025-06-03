@@ -52,7 +52,12 @@ export default async function ChatPage({ params }: { params: { chatId: string } 
       <h1 className="text-2xl font-bold mb-4">Chat with {partnerUser?.username ?? 'Unknown'}</h1>
 
       <Presence chatId={chatId} currentUserId={userId} currentUsername={username} />
-      <RealtimeMessages chatId={chatId} currentUserId={userId} currentUsername={username} />
+      <RealtimeMessages
+        chatId={chatId}
+        currentUserId={userId}
+        currentUsername={username}
+        recipientId={partnerUser?.id ?? ''}
+      />
 
       <ChatInput
         chatId={chatId}

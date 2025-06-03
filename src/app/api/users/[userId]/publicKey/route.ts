@@ -4,8 +4,10 @@ export async function GET(
   _req: Request,
   { params }: { params: { userId: string } }
 ): Promise<Response> {
+  // await the dynamic params proxy
+  const { userId } = await params;
   const user = await prisma.user.findUnique({
-    where: { id: params.userId },
+    where: { id: userId },
     select: { publicKey: true },
   });
 
@@ -23,6 +25,8 @@ export async function POST(
   req: Request,
   { params }: { params: { userId: string } }
 ): Promise<Response> {
+  // await dynamic params
+  const { userId } = await params;
   const { publicKey } = (await req.json()) as { publicKey?: string };
 
   if (!publicKey || typeof publicKey !== 'string') {
@@ -30,7 +34,7 @@ export async function POST(
   }
 
   const updated = await prisma.user.update({
-    where: { id: params.userId },
+    where: { id: userId },
     data: { publicKey },
     select: { publicKey: true },
   });

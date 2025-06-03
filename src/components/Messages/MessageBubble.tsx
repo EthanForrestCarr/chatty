@@ -3,12 +3,14 @@
 import React, { useEffect, useRef, useState } from 'react';
 import ReactionPicker from '@/components/ReactionPicker';
 import { initSocket } from '@/lib/socket';
+import { initSodium, deriveSharedKey, decrypt } from '@/lib/crypto';
 import { Message } from './types';
 
 interface MessageBubbleProps {
   msg: Message;
   currentUserId: string;
   currentUsername: string;
+  recipientId: string; // chat partner's userId for own-message decryption
   isPending?: boolean;
   onUndo?: (id: string) => void;
 }
@@ -17,10 +19,42 @@ const MessageBubble: React.FC<MessageBubbleProps> = ({
   msg,
   currentUserId,
   currentUsername,
+  recipientId,
   isPending,
   onUndo,
 }) => {
+  // maintain decrypted content for E2EE
+  const [decryptedContent, setDecryptedContent] = useState(msg.content);
+
   const isOwn = msg.sender.id === currentUserId;
+
+  // decrypt incoming messages with nonce
+  useEffect(() => {
+    async function doDecrypt() {
+      if (msg.nonce) {
+        await initSodium();
+        const privateKey = localStorage.getItem('privateKey');
+        if (!privateKey) return;
+        // determine which user's public key to fetch
+        const otherId = isOwn ? recipientId : msg.sender.id;
+        const res = await fetch(`/api/users/${otherId}/publicKey`);
+        if (!res.ok) {
+          console.error('Failed to fetch public key for decryption');
+          return;
+        }
+        const { publicKey } = (await res.json()) as { publicKey?: string };
+        if (!publicKey) {
+          console.error('No public key available for user', otherId);
+          return;
+        }
+        const sharedKey = await deriveSharedKey(privateKey, publicKey);
+        const plain = await decrypt(sharedKey, msg.content, msg.nonce);
+        setDecryptedContent(plain);
+      }
+    }
+    doDecrypt().catch(console.error);
+  }, [msg.content, msg.nonce, isOwn, recipientId, msg.sender.id]);
+
   // compute message creation timestamp
   const createdTime = new Date(msg.createdAt).getTime();
   // edit state
@@ -140,7 +174,7 @@ const MessageBubble: React.FC<MessageBubbleProps> = ({
           onChange={(e) => setDraft(e.target.value)}
         />
       ) : (
-        <p className="whitespace-pre-wrap">{msg.content}</p>
+        <p className="whitespace-pre-wrap">{decryptedContent}</p>
       )}
       {msg.attachments && msg.attachments.length > 0 && (
         <div className="mt-2 space-y-2">

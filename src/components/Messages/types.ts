@@ -11,6 +11,7 @@ export interface Reaction {
 export interface Message {
   id: string;
   content: string;
+  nonce?: string; // optional E2EE nonce for decryption
   editedAt?: string;
   createdAt: string;
   sender: { id: string; username: string };
