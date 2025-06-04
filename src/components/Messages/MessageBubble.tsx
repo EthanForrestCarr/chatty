@@ -25,13 +25,16 @@ const MessageBubble: React.FC<MessageBubbleProps> = ({
 }) => {
   // maintain decrypted content for E2EE
   const [decryptedContent, setDecryptedContent] = useState(msg.content);
+  const [decryptError, setDecryptError] = useState<string | null>(null);
 
   const isOwn = msg.sender.id === currentUserId;
 
   // decrypt incoming messages with nonce
   useEffect(() => {
     async function doDecrypt() {
-      if (msg.nonce) {
+      if (!msg.nonce) return;
+
+      try {
         await initSodium();
         const storageKey = `privateKey:${currentUserId}`;
         const privateKey = localStorage.getItem(storageKey);
@@ -51,11 +54,15 @@ const MessageBubble: React.FC<MessageBubbleProps> = ({
         const sharedKey = await deriveSharedKey(privateKey, publicKey);
         const plain = await decrypt(sharedKey, msg.content, msg.nonce);
         setDecryptedContent(plain);
+        setDecryptError(null);
         // initialize edit draft to decrypted plaintext
         setDraft(plain);
+      } catch (err) {
+        console.error('Decryption error:', err);
+        setDecryptError('⚠️ Could not decrypt message');
       }
     }
-    doDecrypt().catch(console.error);
+    doDecrypt();
   }, [msg.content, msg.nonce, isOwn, recipientId, msg.sender.id]);
 
   // compute message creation timestamp
@@ -181,65 +188,78 @@ const MessageBubble: React.FC<MessageBubbleProps> = ({
       }`}
     >
       <p className="text-sm font-semibold mb-1">{isOwn ? 'You' : msg.sender.username}</p>
-      {isEditing ? (
-        <textarea
-          className="w-full p-2 border rounded"
-          value={draft}
-          onChange={(e) => setDraft(e.target.value)}
-        />
+      {decryptError ? (
+        <div className="decrypt-error">{decryptError}</div>
       ) : (
-        <p className="whitespace-pre-wrap">{decryptedContent}</p>
-      )}
-      {msg.attachments && msg.attachments.length > 0 && (
-        <div className="mt-2 space-y-2">
-          {msg.attachments!.map((att) => (
-            <div key={att.key}>
-              {att.contentType.startsWith('image/') ? (
-                <img src={att.url} alt={att.filename} className="max-w-full rounded" />
-              ) : (
-                <a href={att.url} download={att.filename} className="text-blue-200 hover:underline">
-                  📎 {att.filename}
-                </a>
-              )}
+        <>
+          {isEditing ? (
+            <textarea
+              className="w-full p-2 border rounded"
+              value={draft}
+              onChange={(e) => setDraft(e.target.value)}
+            />
+          ) : (
+            <p className="whitespace-pre-wrap">{decryptedContent}</p>
+          )}
+          {msg.attachments && msg.attachments.length > 0 && (
+            <div className="mt-2 space-y-2">
+              {msg.attachments!.map((att) => (
+                <div key={att.key}>
+                  {att.contentType.startsWith('image/') ? (
+                    <img src={att.url} alt={att.filename} className="max-w-full rounded" />
+                  ) : (
+                    <a
+                      href={att.url}
+                      download={att.filename}
+                      className="text-blue-200 hover:underline"
+                    >
+                      📎 {att.filename}
+                    </a>
+                  )}
+                </div>
+              ))}
             </div>
-          ))}
-        </div>
+          )}
+          <p className="text-xs text-right mt-1 text-white/70">
+            {new Date(msg.createdAt).toLocaleTimeString()}
+            {msg.editedAt && <span className="italic ml-2">(edited)</span>}
+          </p>
+          <div className="flex items-center space-x-2 mt-2">
+            {Object.entries(reactionCounts).map(([emoji, count]) => (
+              <span key={emoji} className="text-sm">
+                {emoji} {count}
+              </span>
+            ))}
+            <ReactionPicker onSelect={handleReaction} />
+            {canEdit && !isEditing && (
+              <button
+                onClick={() => setIsEditing(true)}
+                className="text-xs text-green-500 hover:underline"
+              >
+                Edit
+              </button>
+            )}
+            {isEditing && (
+              <>
+                <button onClick={handleSaveEdit} className="text-xs text-blue-500 hover:underline">
+                  Save
+                </button>
+                <button
+                  onClick={handleCancelEdit}
+                  className="text-xs text-gray-500 hover:underline"
+                >
+                  Cancel
+                </button>
+              </>
+            )}
+            {!isPending && canDelete && (
+              <button onClick={handleDelete} className="ml-2 text-xs text-red-500 hover:underline">
+                Delete
+              </button>
+            )}
+          </div>
+        </>
       )}
-      <p className="text-xs text-right mt-1 text-white/70">
-        {new Date(msg.createdAt).toLocaleTimeString()}
-        {msg.editedAt && <span className="italic ml-2">(edited)</span>}
-      </p>
-      <div className="flex items-center space-x-2 mt-2">
-        {Object.entries(reactionCounts).map(([emoji, count]) => (
-          <span key={emoji} className="text-sm">
-            {emoji} {count}
-          </span>
-        ))}
-        <ReactionPicker onSelect={handleReaction} />
-        {canEdit && !isEditing && (
-          <button
-            onClick={() => setIsEditing(true)}
-            className="text-xs text-green-500 hover:underline"
-          >
-            Edit
-          </button>
-        )}
-        {isEditing && (
-          <>
-            <button onClick={handleSaveEdit} className="text-xs text-blue-500 hover:underline">
-              Save
-            </button>
-            <button onClick={handleCancelEdit} className="text-xs text-gray-500 hover:underline">
-              Cancel
-            </button>
-          </>
-        )}
-        {!isPending && canDelete && (
-          <button onClick={handleDelete} className="ml-2 text-xs text-red-500 hover:underline">
-            Delete
-          </button>
-        )}
-      </div>
     </div>
   );
 };

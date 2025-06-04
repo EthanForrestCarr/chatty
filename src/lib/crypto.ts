@@ -138,3 +138,14 @@ export async function backupDecrypt(
   const privKey = sodium.crypto_secretbox_open_easy(cipher, nonce, key);
   return sodium.to_base64(privKey, sodium.base64_variants.ORIGINAL);
 }
+
+/**
+ * Derive the X25519 public key from a base64-encoded private key.
+ */
+export async function derivePublicKey(privateKeyB64: string): Promise<string> {
+  await initSodium();
+  const priv = sodium.from_base64(privateKeyB64, sodium.base64_variants.ORIGINAL);
+  // scalar multiplication on base point
+  const pub = sodium.crypto_scalarmult_base(priv);
+  return sodium.to_base64(pub, sodium.base64_variants.ORIGINAL);
+}

@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { useSession } from 'next-auth/react';
-import { backupDecrypt } from '@/lib/crypto';
+import { backupDecrypt, derivePublicKey } from '@/lib/crypto';
 
 export default function KeyRestore() {
   const { data: session } = useSession();
@@ -16,11 +16,11 @@ export default function KeyRestore() {
 
   useEffect(() => {
     if (!userId) return;
-    // only fetch if no key locally
     const storageKey = `privateKey:${userId}`;
-    if (localStorage.getItem(storageKey)) {
-      setStatus('Local key already present');
-      return;
+    // warn if a local key already exists; we will still fetch backup
+    const existing = localStorage.getItem(storageKey);
+    if (existing) {
+      setStatus('Overwriting existing local key');
     }
     fetch(`/api/users/${userId}/backup`)
       .then((res) => res.json())
@@ -50,7 +50,20 @@ export default function KeyRestore() {
       const privKey = await backupDecrypt(blob.salt, blob.nonce, blob.encryptedKey, pass);
       const storageKey = `privateKey:${userId}`;
       localStorage.setItem(storageKey, privKey);
+      // derive and re-publish public key so peers can decrypt
+      try {
+        const publicKey = await derivePublicKey(privKey);
+        await fetch(`/api/users/${userId}/publicKey`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ publicKey }),
+        });
+      } catch (pubErr) {
+        console.error('Failed to re-publish public key:', pubErr);
+      }
       setStatus('Restore successful');
+      // reload to re-trigger decryption of messages
+      window.location.reload();
     } catch (e) {
       console.error(e);
       setStatus('Incorrect passphrase or corrupt backup');

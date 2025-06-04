@@ -22,6 +22,20 @@ function E2EEInitializer() {
       }
       if (!stored) {
         initSodium().then(async () => {
+          // check if user already has a publicKey on server to avoid overwriting
+          try {
+            const res = await fetch(`/api/users/${userId}/publicKey`);
+            if (res.ok) {
+              const data = await res.json();
+              if (data.publicKey) {
+                // existing key, no need to regenerate
+                return;
+              }
+            }
+          } catch (e) {
+            console.error('Failed to fetch existing publicKey', e);
+            // proceed to generate, since we cannot confirm
+          }
           const { publicKey, privateKey } = await generateKeyPair();
           localStorage.setItem(storageKey, privateKey);
           fetch(`/api/users/${userId}/publicKey`, {
@@ -32,7 +46,7 @@ function E2EEInitializer() {
         });
       }
     }
-  }, [status]);
+  }, [status, session?.user?.id]);
 
   return null;
 }
