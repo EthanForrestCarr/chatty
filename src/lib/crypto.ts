@@ -149,3 +149,39 @@ export async function derivePublicKey(privateKeyB64: string): Promise<string> {
   const pub = sodium.crypto_scalarmult_base(priv);
   return sodium.to_base64(pub, sodium.base64_variants.ORIGINAL);
 }
+
+/**
+ * Encrypts raw data using XChaCha20-Poly1305 with the shared key, returning cipher bytes and base64 nonce.
+ */
+export async function encryptBytes(
+  key: Uint8Array,
+  data: Uint8Array
+): Promise<{ cipherBytes: Uint8Array; nonce: string }> {
+  await initSodium();
+  const nonceBuf = sodium.randombytes_buf(sodium.crypto_aead_xchacha20poly1305_ietf_NPUBBYTES);
+  const cipher = sodium.crypto_aead_xchacha20poly1305_ietf_encrypt(data, null, null, nonceBuf, key);
+  return {
+    cipherBytes: cipher,
+    nonce: sodium.to_base64(nonceBuf, sodium.base64_variants.ORIGINAL),
+  };
+}
+
+/**
+ * Decrypts raw cipher bytes with the shared key and base64 nonce, returning plaintext bytes.
+ */
+export async function decryptBytes(
+  key: Uint8Array,
+  cipherBytes: Uint8Array,
+  nonceB64: string
+): Promise<Uint8Array> {
+  await initSodium();
+  const nonce = sodium.from_base64(nonceB64, sodium.base64_variants.ORIGINAL);
+  const plain = sodium.crypto_aead_xchacha20poly1305_ietf_decrypt(
+    null,
+    cipherBytes,
+    null,
+    nonce,
+    key
+  );
+  return plain;
+}

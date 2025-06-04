@@ -3,7 +3,7 @@
 import { useState, useRef } from 'react';
 import { initSocket } from '@/lib/socket';
 import type { AttachmentMeta } from '@/lib/socket-types';
-import { initSodium, deriveSharedKey, encrypt } from '@/lib/crypto';
+import { initSodium, deriveSharedKey, encrypt, encryptBytes } from '@/lib/crypto';
 
 export default function ChatInput({
   chatId,
@@ -43,40 +43,45 @@ export default function ChatInput({
     e.preventDefault();
     if (!content.trim() && files.length === 0) return;
 
+    // initialize crypto and derive shared key
+    await initSodium();
+    const storageKey = `privateKey:${currentUser.id}`;
+    const privateKey = localStorage.getItem(storageKey);
+    if (!privateKey) {
+      throw new Error('Missing private E2EE key; please reload to initialize encryption');
+    }
+    const resPK = await fetch(`/api/users/${recipientId}/publicKey`);
+    if (!resPK.ok) throw new Error('Failed to fetch recipient public key');
+    const { publicKey } = (await resPK.json()) as { publicKey?: string };
+    if (!publicKey) throw new Error('Recipient has no public key published');
+    const sharedKey = await deriveSharedKey(privateKey, publicKey);
+
+    // encrypt and upload attachments if any
     let attachments: AttachmentMeta[] = [];
     if (files.length) {
       const formData = new FormData();
-      files.forEach((file) => formData.append('files', file));
+      for (const file of files) {
+        const arrayBuffer = await file.arrayBuffer();
+        const data = new Uint8Array(arrayBuffer);
+        const { cipherBytes, nonce: fileNonce } = await encryptBytes(sharedKey, data);
+        formData.append('files', new Blob([cipherBytes], { type: file.type }), file.name);
+        formData.append('nonces', fileNonce);
+      }
       const res = await fetch('/api/uploads', { method: 'POST', body: formData });
       const data = (await res.json()) as { attachments: AttachmentMeta[] };
       attachments = data.attachments;
     }
 
+    // encrypt content if present
+    let encryptedContent = content;
+    let nonce: string | undefined;
+    if (content.trim()) {
+      const { cipherText, nonce: n } = await encrypt(sharedKey, content);
+      encryptedContent = cipherText;
+      nonce = n;
+    }
+
     try {
-      // encrypt content if present
-      let encryptedContent = content;
-      let nonce: string | undefined;
-      if (content.trim()) {
-        await initSodium();
-        // get our private key for this user
-        const storageKey = `privateKey:${currentUser.id}`;
-        const privateKey = localStorage.getItem(storageKey);
-        if (!privateKey) {
-          throw new Error('Missing private E2EE key; please reload to initialize encryption');
-        }
-        // fetch recipient's public key
-        const resPK = await fetch(`/api/users/${recipientId}/publicKey`);
-        if (!resPK.ok) throw new Error('Failed to fetch recipient public key');
-        const { publicKey } = (await resPK.json()) as { publicKey?: string };
-        if (!publicKey) {
-          throw new Error('Recipient has no public key published');
-        }
-        // derive shared secret and encrypt
-        const sharedKey = await deriveSharedKey(privateKey, publicKey);
-        const { cipherText, nonce: n } = await encrypt(sharedKey, content);
-        encryptedContent = cipherText;
-        nonce = n;
-      }
       const socket = await initSocket();
       const msg = {
         chatId,

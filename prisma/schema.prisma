@@ -102,6 +102,7 @@ model Attachment {
   filename    String
   contentType String
   size        Int
+  nonce       String?  // optional nonce for encrypted attachments
   message     Message  @relation(fields: [messageId], references: [id])
   messageId   String
   uploadedAt  DateTime @default(now())

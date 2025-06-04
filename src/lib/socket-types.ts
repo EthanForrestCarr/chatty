@@ -5,6 +5,7 @@ export interface AttachmentMeta {
   filename: string;
   contentType: string;
   size: number;
+  nonce?: string; // base64 nonce for encrypted attachment data
 }
 
 // a chat user in presence and messages

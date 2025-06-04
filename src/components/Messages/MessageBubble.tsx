@@ -3,7 +3,7 @@
 import React, { useEffect, useRef, useState } from 'react';
 import ReactionPicker from '@/components/ReactionPicker';
 import { initSocket } from '@/lib/socket';
-import { initSodium, deriveSharedKey, decrypt, encrypt } from '@/lib/crypto';
+import { initSodium, deriveSharedKey, decrypt, decryptBytes, encrypt } from '@/lib/crypto';
 import { Message } from './types';
 
 interface MessageBubbleProps {
@@ -26,20 +26,19 @@ const MessageBubble: React.FC<MessageBubbleProps> = ({
   // maintain decrypted content for E2EE
   const [decryptedContent, setDecryptedContent] = useState(msg.content);
   const [decryptError, setDecryptError] = useState<string | null>(null);
+  // map attachment key to decrypted blob URL
+  const [attachmentBlobs, setAttachmentBlobs] = useState<Record<string, string>>({});
 
   const isOwn = msg.sender.id === currentUserId;
 
   // decrypt incoming messages with nonce
   useEffect(() => {
     async function doDecrypt() {
-      if (!msg.nonce) return;
-
       try {
         await initSodium();
         const storageKey = `privateKey:${currentUserId}`;
         const privateKey = localStorage.getItem(storageKey);
         if (!privateKey) return;
-        // determine which user's public key to fetch
         const otherId = isOwn ? recipientId : msg.sender.id;
         const res = await fetch(`/api/users/${otherId}/publicKey`);
         if (!res.ok) {
@@ -52,11 +51,32 @@ const MessageBubble: React.FC<MessageBubbleProps> = ({
           return;
         }
         const sharedKey = await deriveSharedKey(privateKey, publicKey);
-        const plain = await decrypt(sharedKey, msg.content, msg.nonce);
-        setDecryptedContent(plain);
-        setDecryptError(null);
-        // initialize edit draft to decrypted plaintext
-        setDraft(plain);
+        // decrypt text content if present
+        if (msg.nonce) {
+          const plain = await decrypt(sharedKey, msg.content, msg.nonce);
+          setDecryptedContent(plain);
+          setDecryptError(null);
+          setDraft(plain);
+        }
+        // decrypt attachments if present
+        if (msg.attachments && msg.attachments.length > 0) {
+          const blobs: Record<string, string> = {};
+          for (const att of msg.attachments) {
+            if (!att.nonce) continue;
+            try {
+              const response = await fetch(att.url);
+              if (!response.ok) throw new Error(`HTTP ${response.status}`);
+              const arrayBuffer = await response.arrayBuffer();
+              const cipherBytes = new Uint8Array(arrayBuffer);
+              const plainBytes = await decryptBytes(sharedKey, cipherBytes, att.nonce);
+              const blob = new Blob([plainBytes], { type: att.contentType });
+              blobs[att.key] = URL.createObjectURL(blob);
+            } catch (e) {
+              console.error('Failed to decrypt attachment', att.key, e);
+            }
+          }
+          setAttachmentBlobs(blobs);
+        }
       } catch (err) {
         console.error('Decryption error:', err);
         setDecryptError('⚠️ Could not decrypt message');
@@ -203,21 +223,29 @@ const MessageBubble: React.FC<MessageBubbleProps> = ({
           )}
           {msg.attachments && msg.attachments.length > 0 && (
             <div className="mt-2 space-y-2">
-              {msg.attachments!.map((att) => (
-                <div key={att.key}>
-                  {att.contentType.startsWith('image/') ? (
-                    <img src={att.url} alt={att.filename} className="max-w-full rounded" />
-                  ) : (
-                    <a
-                      href={att.url}
-                      download={att.filename}
-                      className="text-blue-200 hover:underline"
-                    >
-                      📎 {att.filename}
-                    </a>
-                  )}
-                </div>
-              ))}
+              {msg.attachments!.map((att) => {
+                const blobUrl = attachmentBlobs[att.key];
+                if (att.contentType.startsWith('image/')) {
+                  return (
+                    <img
+                      key={att.key}
+                      src={blobUrl || att.url}
+                      alt={att.filename}
+                      className="max-w-full rounded"
+                    />
+                  );
+                }
+                return (
+                  <a
+                    key={att.key}
+                    href={blobUrl || att.url}
+                    download={att.filename}
+                    className="text-blue-200 hover:underline"
+                  >
+                    📎 {att.filename}
+                  </a>
+                );
+              })}
             </div>
           )}
           <p className="text-xs text-right mt-1 text-white/70">

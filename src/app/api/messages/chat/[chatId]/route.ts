@@ -70,6 +70,7 @@ export async function GET(_req: NextRequest, { params }: { params: { chatId: str
         filename: a.filename,
         contentType: a.contentType,
         size: a.size,
+        nonce: a.nonce, // include nonce for encrypted attachments
       })),
     };
   });

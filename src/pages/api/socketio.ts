@@ -81,6 +81,7 @@ export default function SocketHandler(_req: NextApiRequest, res: NextApiResponse
                 filename: att.filename,
                 contentType: att.contentType,
                 size: att.size,
+                nonce: att.nonce, // store the encryption nonce
                 messageId: saved.id,
               })),
             });
@@ -93,7 +94,7 @@ export default function SocketHandler(_req: NextApiRequest, res: NextApiResponse
             sender,
             createdAt: saved.createdAt.toISOString(),
             chatId,
-            attachments,
+            attachments, // attachments include nonce
           });
         } catch (error) {
           console.error('❌ Socket message handler error:', error);
