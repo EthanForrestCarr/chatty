@@ -1,6 +1,4 @@
-/* eslint-disable @typescript-eslint/no-unused-vars */
 import { NextResponse } from 'next/server';
-import type { AuthOptions } from 'next-auth';
 
 // stubbed getServerSession
 export const getServerSession = jest
@@ -8,7 +6,7 @@ export const getServerSession = jest
   .mockResolvedValue({ user: { id: 'foo' } });
 
 // stubbed NextAuth handler
-const NextAuth = (_opts: AuthOptions) => ({
+const NextAuth = () => ({
   GET: () => NextResponse.json({}),
   POST: () => NextResponse.json({}),
 });

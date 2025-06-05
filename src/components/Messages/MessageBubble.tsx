@@ -4,6 +4,7 @@ import React, { useEffect, useRef, useState } from 'react';
 import ReactionPicker from '@/components/ReactionPicker';
 import { initSocket } from '@/lib/socket';
 import { initSodium, deriveSharedKey, decrypt, decryptBytes, encrypt } from '@/lib/crypto';
+import Image from 'next/image';
 import { Message } from './types';
 
 interface MessageBubbleProps {
@@ -83,7 +84,7 @@ const MessageBubble: React.FC<MessageBubbleProps> = ({
       }
     }
     doDecrypt();
-  }, [msg.content, msg.nonce, isOwn, recipientId, msg.sender.id]);
+  }, [msg.content, msg.nonce, isOwn, recipientId, msg.sender.id, currentUserId, msg.attachments]);
 
   // compute message creation timestamp
   const createdTime = new Date(msg.createdAt).getTime();
@@ -104,7 +105,7 @@ const MessageBubble: React.FC<MessageBubbleProps> = ({
     }
     // already expired
     setCanEdit(false);
-  }, [initialCanEdit, createdTime]);
+  }, [initialCanEdit, createdTime, editWindow]);
   // allow delete within 30 seconds, managed via state
   const deleteWindow = 30 * 1000;
   const initialCanDelete = isOwn && Date.now() - createdTime < deleteWindow;
@@ -119,7 +120,7 @@ const MessageBubble: React.FC<MessageBubbleProps> = ({
     }
     // already expired
     setCanDelete(false);
-  }, [initialCanDelete, createdTime]);
+  }, [initialCanDelete, createdTime, deleteWindow]);
   // always initialize ref and scroll effect
   const ref = useRef<HTMLDivElement>(null);
   useEffect(() => {
@@ -223,29 +224,30 @@ const MessageBubble: React.FC<MessageBubbleProps> = ({
           )}
           {msg.attachments && msg.attachments.length > 0 && (
             <div className="mt-2 space-y-2">
-              {msg.attachments!.map((att) => {
-                const blobUrl = attachmentBlobs[att.key];
-                if (att.contentType.startsWith('image/')) {
-                  return (
-                    <img
-                      key={att.key}
-                      src={blobUrl || att.url}
-                      alt={att.filename}
-                      className="max-w-full rounded"
-                    />
-                  );
-                }
-                return (
-                  <a
-                    key={att.key}
-                    href={blobUrl || att.url}
-                    download={att.filename}
-                    className="text-blue-200 hover:underline"
-                  >
-                    📎 {att.filename}
-                  </a>
-                );
-              })}
+              {msg.attachments!.map((att) => (
+                <div key={att.key}>
+                  {att.contentType.startsWith('image/') ? (
+                    <div className="relative w-full h-auto">
+                      <Image
+                        src={attachmentBlobs[att.key] || att.url}
+                        alt={att.filename}
+                        width={500}
+                        height={500}
+                        unoptimized
+                        className="rounded"
+                      />
+                    </div>
+                  ) : (
+                    <a
+                      href={attachmentBlobs[att.key] || att.url}
+                      download={att.filename}
+                      className="text-blue-200 hover:underline"
+                    >
+                      📎 {att.filename}
+                    </a>
+                  )}
+                </div>
+              ))}
             </div>
           )}
           <p className="text-xs text-right mt-1 text-white/70">

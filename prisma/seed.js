@@ -1,31 +1,31 @@
-const { PrismaClient } = require("@prisma/client");
-const bcrypt = require("bcrypt");
+import { PrismaClient } from '@prisma/client';
+import bcrypt from 'bcrypt';
 
 const prisma = new PrismaClient();
 
 async function main() {
-  const passwordHash = await bcrypt.hash("password123", 10);
+  const passwordHash = await bcrypt.hash('password123', 10);
 
   await prisma.user.upsert({
-    where: { username: "test" },
+    where: { username: 'test' },
     update: {},
     create: {
-      username: "test",
-      email: "test@example.com",
+      username: 'test',
+      email: 'test@example.com',
       password: passwordHash,
     },
   });
   await prisma.user.upsert({
-    where: { username: "dummy" },
+    where: { username: 'dummy' },
     update: {},
     create: {
-      username: "dummy",
-      email: "dummy@example.com",
+      username: 'dummy',
+      email: 'dummy@example.com',
       password: passwordHash,
     },
   });
 
-  console.log("✅ Seed complete");
+  console.log('✅ Seed complete');
 }
 
 main()

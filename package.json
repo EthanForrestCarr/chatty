@@ -3,6 +3,7 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
+    "pretest": "prisma generate",
     "test": "jest",
     "test:watch": "jest --watch",
     "dev": "concurrently \"npm:dev:next\" \"npm:dev:open\"",
