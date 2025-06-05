@@ -1,4 +1,6 @@
-# 💬 Chatty
+# Chatty
+
+[![Azure Pipelines Build Status](https://dev.azure.com/EthanCarr/chatty/_apis/build/status/1?branchName=main)](https://dev.azure.com/EthanCarr/chatty/_build/latest?definitionId=1&branchName=main)
 
 **Chatty** is a simple, real-time chat application built with **Next.js**, **Socket.IO**, and **PostgreSQL**. It supports one-on-one conversations and lays the foundation for scalable, modern communication features.
 
