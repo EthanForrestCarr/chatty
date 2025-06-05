@@ -27,8 +27,8 @@ steps:
   - task: Npm@1
     displayName: 'Run tests'
     inputs:
-      command: 'test'
-      arguments: '-- --ci --coverage'
+      command: 'custom'
+      customCommand: 'run test -- --ci --coverage'
 
   - task: Npm@1
     displayName: 'Build Next.js application'
