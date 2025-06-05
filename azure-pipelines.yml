@@ -13,18 +13,22 @@ steps:
       versionSpec: '18.x'
     displayName: 'Install Node.js'
 
-  - script: npm ci
+  - task: CmdLine@2
     displayName: 'Install dependencies'
-    shell: cmd
+    inputs:
+      script: 'npm ci'
 
-  - script: npm run lint
+  - task: CmdLine@2
     displayName: 'Run ESLint and Prettier'
-    shell: cmd
+    inputs:
+      script: 'npm run lint'
 
-  - script: npm run test -- --ci --coverage
+  - task: CmdLine@2
     displayName: 'Run tests'
-    shell: cmd
+    inputs:
+      script: 'npm run test -- --ci --coverage'
 
-  - script: npm run build
+  - task: CmdLine@2
     displayName: 'Build Next.js application'
-    shell: cmd
+    inputs:
+      script: 'npm run build'
