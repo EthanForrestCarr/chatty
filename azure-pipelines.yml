@@ -15,12 +15,16 @@ steps:
 
   - script: npm ci
     displayName: 'Install dependencies'
+    shell: cmd
 
   - script: npm run lint
     displayName: 'Run ESLint and Prettier'
+    shell: cmd
 
   - script: npm run test -- --ci --coverage
     displayName: 'Run tests'
+    shell: cmd
 
   - script: npm run build
     displayName: 'Build Next.js application'
+    shell: cmd
